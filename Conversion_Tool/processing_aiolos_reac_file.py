@@ -1,3 +1,5 @@
+import re
+
 # --- Helper Functions ---
 def process_reaction_line(line):
     """Process a single reaction line and return modified components."""
