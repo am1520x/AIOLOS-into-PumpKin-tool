@@ -1,6 +1,33 @@
 import re
 
 # --- Helper Functions ---
+def transform_species_set(species_set):
+    """
+    Apply replacement rules to all species in the set.
+    
+    Args:
+        species_set (set): Original set of species names
+        
+    Returns:
+        set: New set with transformed species names
+    """
+    replacements = [
+        ('e-', 'E'),
+        ('p', '^+'),
+        ('->', '=>'),
+        ('M', 'ANY_NEUTRAL'),
+        (' ', '')
+    ]
+    
+    transformed_set = set()
+    for species in species_set:
+        modified_species = species
+        for old, new in replacements:
+            modified_species = modified_species.replace(old, new)
+        transformed_set.add(modified_species)
+    
+    return transformed_set
+
 def process_reaction_line(line):
     """Process a single reaction line and return modified components."""
     # Remove stoichiometric numbers
@@ -41,7 +68,7 @@ def process_side(side, multiplier, reaction_stoich, species_set):
             net_coeff = multiplier * coeff
             reaction_stoich[sp] = reaction_stoich.get(sp, 0) + net_coeff
             species_set.add(sp)
-
+    
 def parse_reaction_data(reac_text):
     """
     Parse reaction data from text and return reaction components.

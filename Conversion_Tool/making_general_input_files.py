@@ -2,7 +2,7 @@
 
 import re
 import numpy as np
-from processing_aiolos_reac_file import parse_reaction_data, process_reaction_line
+from processing_aiolos_reac_file import parse_reaction_data, process_reaction_line, transform_species_set
 
 try:
   with open('steamfull_step3.reac', 'r') as f:  # Replace 'your_file_path.py' with the actual path
@@ -13,6 +13,8 @@ except FileNotFoundError:
   
 if reac_text:
     reaction_list, stoich_list, species_list = parse_reaction_data(reac_text)
+    species_list = transform_species_set(species_list)
+
 
     # --- File Output ---
     # Write species list
