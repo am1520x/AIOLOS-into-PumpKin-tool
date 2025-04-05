@@ -24,7 +24,6 @@ def parse_reactions(file_path):
                 parts = line[1:].split('|')
                 reaction_part = parts[0].strip()
                 params = parts[1].strip().split()
-                
                 # Extract Arrhenius parameters
                 alpha = float(params[0])
                 beta = float(params[1])
@@ -40,7 +39,6 @@ def parse_reactions(file_path):
                     species_part = species_part.strip()
                     coeff, species = species_part.split(' ', 1)
                     reactants.append((species.strip(), int(coeff)))
-                
                 reactions.append({
                     'reactants': reactants,
                     'alpha': alpha,

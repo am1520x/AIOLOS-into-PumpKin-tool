@@ -78,7 +78,7 @@ def process_simulation_data():
 
     try:
         print("\nProcessing simulation data...")
-        avg_T_at_index, number_densities = process_timesteps(
+        avg_T, num_den = process_timesteps(
             directory="../dynamic_cond0_data/",
             sim="dynamic_ignoreleectrontest-cell200-newsol2-h2e+2-long-cond0",
             timesteps=timesteps,
@@ -87,14 +87,12 @@ def process_simulation_data():
             index=10,
             output_file=output_files['densities']
         )
-
         make_rates(
             output_file=output_files['rates'],
-            avg_T_at_index=avg_T_at_index,
-            number_densities=number_densities,
+            avg_T_at_index=avg_T,
+            number_densities=num_den,
             timesteps=timesteps
         )
-
         print(f"\nSuccessfully generated:\n- {output_files['densities']}\n- {output_files['rates']}")
         return True
 
