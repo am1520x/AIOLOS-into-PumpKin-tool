@@ -54,8 +54,8 @@ def process_simulation_data():
 
     timesteps = range(13, 17, 1)
     output_files = {
-        'densities': "species_densities_at_r10.txt",
-        'rates': "rates.txt"
+        'densities': "qt_densities.txt",
+        'rates': "qt_rates.txt"
     }
 
     try:
