@@ -2,7 +2,7 @@ from calculating_rates import parse_reactions, calc_rate_coeff, calculate_reacti
 
 def make_rates(output_file, avg_T_at_index, number_densities, timesteps):
     # 1. Parse the reactions from file
-    reactions = parse_reactions('test.reac')
+    reactions = parse_reactions('thermo.reac')
     header = "Time_s\t" #+ "\t".join([spc[0] for spc in species])   
     with open(output_file, 'w') as f:
         # Write header
