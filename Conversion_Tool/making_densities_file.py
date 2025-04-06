@@ -37,7 +37,7 @@ def get_essential_data(directory, sim, timestep, species, rplanet=-1):
 
     return avg_T, r, all_species_datas
 
-def process_timesteps(directory, sim, timesteps, species, rplanet=1.37e8, index=10, output_file="species_densities.txt"):
+def process_timesteps(directory, sim, timesteps, species, rplanet=1.37e8, index=10, output_file="species_densities.txt", output_file_2="qt_conditions.txt"):
     """
     Process multiple timesteps and write number densities at a specific index to a file.
     Returns a nested dictionary with the data and list of average temperatures.
@@ -60,11 +60,11 @@ def process_timesteps(directory, sim, timesteps, species, rplanet=1.37e8, index=
     avg_T_list = []
     data_dict = {}
     header = "Time_s\t" #+ "\t".join([spc[0] for spc in species])
-    
-    with open(output_file, 'w') as f:
-        # Write header
-        f.write(header + "\n")
-        
+    with open(output_file, 'w') as f_densities, open(output_file_2, 'w') as f_temps:
+        # Write headers
+        f_densities.write(header + "\n")
+        f_temps.write(header + "\n")
+            
         for t in timesteps:
             try:
                 # Get data for this timestep
@@ -78,7 +78,7 @@ def process_timesteps(directory, sim, timesteps, species, rplanet=1.37e8, index=
                 
                 # Store avg_T at our index
                 avg_T_list.append(avg_T[index])
-                
+                f_temps.write(f"{t}\t{avg_T[index]:.4f}\n")
                 # Initialize dictionary entry for this timestep
                 data_dict[t] = {}
                 
@@ -92,12 +92,11 @@ def process_timesteps(directory, sim, timesteps, species, rplanet=1.37e8, index=
                     data_dict[t][species_name] = num_den[index]
                 
                 # Write to file: timestep then all densities
-                f.write(f"{t}\t" + "\t".join(densities) + "\n")
+                f_densities.write(f"{t}\t" + "\t".join(densities) + "\n")
                 
             except Exception as e:
                 print(f"Error processing timestep {t}: {str(e)}")
                 # Add placeholder entry in dictionary for failed timesteps
                 data_dict[t] = {spc[0]: np.nan for spc in species}
                 continue
-    
     return avg_T_list, data_dict
