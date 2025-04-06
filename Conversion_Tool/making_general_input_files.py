@@ -3,7 +3,7 @@ from making_densities_file import process_timesteps
 from making_rates_file import make_rates
 
 try:
-  with open('steamfull_step3.reac', 'r') as f:  # Replace 'your_file_path.py' with the actual path
+  with open('thermo.reac', 'r') as f:  # Replace 'your_file_path.py' with the actual path
     reac_text = f.read()
 except FileNotFoundError:
   print("File not found.")

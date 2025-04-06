@@ -38,15 +38,14 @@ def process_reaction_line(line):
         ('e-', 'E'),
         ('p', '^+'),
         ('->', '=>'),
-        ('M', 'ANY_NEUTRAL'),
-        (' ', '')
+        ('M', 'ANY_NEUTRAL')
     ]
     for old, new in replacements:
         modified = modified.replace(old, new)
     
     # Fix ion notation
     modified = re.sub(r'([A-Za-z0-9]+)([+-])', r'\1^\2', modified)
-    
+    modified = modified.replace(' ', '')
     return modified
 
 def process_side(side, multiplier, reaction_stoich, species_set):

@@ -7,7 +7,7 @@ from processing_aiolos_reac_file import parse_reaction_data, process_reaction_li
 from making_densities_file import process_timesteps
 from making_rates_file import make_rates
 
-def process_reaction_files(input_file='steamfull_step3.reac'):
+def process_reaction_files(input_file='thermo.reac'):
     """Process Aiolos reaction files and generate output files"""
     try:
         with open(input_file, 'r') as f:
@@ -93,7 +93,7 @@ def process_simulation_data():
             number_densities=num_den,
             timesteps=timesteps
         )
-        print(f"\nSuccessfully generated:\n- {output_files['densities']}\n- {output_files['rates']}")
+        print(f"\nSuccessfully generated:\n- {output_files['densities']}\n- {output_files['rates']}\n- qt_conditions.txt")
         return True
 
     except Exception as e:
