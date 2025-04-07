@@ -70,7 +70,7 @@ def process_simulation_data():
         ["e-", 5e-4, -1, r"$\rm e^-$"]
     ]
 
-    timesteps = range(13, 17, 1)
+    timesteps = range(10, 19, 1)
     output_files = {
         'densities': "qt_densities.txt",
         'rates': "qt_rates.txt"
