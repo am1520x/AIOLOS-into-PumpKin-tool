@@ -17,7 +17,8 @@ def transform_species_set(species_set):
         ('->', '=>'),
         ('M', 'ANY_NEUTRAL'),
         (' ', ''),
-        ('eV', '')
+        ('eV', ''),
+        ('-', '^-')
     ]
     
     transformed_set = set()
@@ -40,7 +41,8 @@ def process_reaction_line(line):
         ('p', '^+'),
         ('->', '=>'),
         ('M', 'ANY_NEUTRAL'),
-        ('+ eV', '')
+        ('+ eV', ''),
+        ('-', '^-')
     ]
     for old, new in replacements:
         modified = modified.replace(old, new)
