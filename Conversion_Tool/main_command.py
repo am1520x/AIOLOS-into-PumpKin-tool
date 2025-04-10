@@ -1,3 +1,27 @@
+"""
+Main script to process chemical reaction data from AIOLOS and generate inputs for PumpKin analysis.
+
+This script:
+- Extracts reactions from a log file
+- Loads chemistry data from a `.dat` file
+- Merges reaction rates with their corresponding reaction strings
+- Processes and outputs:
+    - Species list (`qt_species_list.txt`)
+    - Formatted reaction list (`qt_reactions_list.txt`)
+    - Stoichiometry matrix (`qt_matrix.txt`)
+    - Radial temperature and density profile (`qt_densities.txt`, `qt_conditions.txt`)
+    - Reaction rate matrix (`qt_rates.txt`)
+
+Usage (via command line):
+    python main.py --logfile LOGFILE --chemfile CHEMFILE --sim SIM_NAME --directory DIR --timestep TIMESTEP
+
+Dependencies:
+- pandas
+- argparse
+- numpy
+- Local modules: getting_reactions_from_log, processing_aiolos_reac_file,
+                 making_densities_file, reading_rates_from_new_chem_files
+"""
 import argparse
 import os
 import pandas as pd
@@ -7,6 +31,33 @@ from making_densities_file import process_radial_profile
 from reading_rates_from_new_chem_files import read_new_file, parse_reaction_column
 
 def main():
+    """
+    Main entry point for processing chemistry files and generating required outputs.
+
+    Steps:
+        1. Extracts reactions from the log file.
+        2. Loads reaction rates from the specified chemistry file.
+        3. Merges rate and reaction data for further processing.
+        4. Outputs species list, reactions, and stoichiometric matrix.
+        5. Applies Aiolos-specific species name formatting.
+        6. Processes temperature and density profiles for the given timestep.
+        7. Outputs a matrix of reaction rates by cell.
+
+    Command-line Args:
+        --logfile (str): Path to the log file.
+        --chemfile (str): Path to the chemistry .dat file.
+        --sim (str): Base simulation file name (no extension).
+        --directory (str): Directory containing simulation output files.
+        --timestep (int): Timestep to process.
+
+    Outputs:
+        qt_species_list.txt    : List of species in transformed form
+        qt_reactions_list.txt  : List of reactions in processed form
+        qt_matrix.txt          : Stoichiometric matrix
+        qt_densities.txt       : Species number densities (radial)
+        qt_conditions.txt      : Temperature profile (radial)
+        qt_rates.txt           : Rate matrix by cell
+    """
     parser = argparse.ArgumentParser(description="Process chemistry and reaction data.")
     parser.add_argument('--logfile', required=True, help="Path to the log file")
     parser.add_argument('--chemfile', required=True, help="Path to the chemistry .dat file")

@@ -1,29 +1,62 @@
-from getting_reactions_from_log import extract_all_reactions
-from processing_aiolos_reac_file import process_reaction_line, transform_species_set
-from making_densities_file import process_radial_profile
+"""
+Module for reading rate of reaction from chem output files and parsing reaction stoichiometry.
+
+Functions:
+- read_new_file: Loads tabular reaction rate data with reaction numbers as column headers.
+- process_side: Helper function to extract stoichiometric coefficients from one side of a reaction.
+- parse_reaction_column: Parses a series of reaction strings and returns species-level stoichiometry.
+
+"""
+from processing_aiolos_reac_file import transform_species_set
 import pandas as pd
 import numpy as np
 import re
 
-# Function to read the new .txt file
+
 def read_new_file(file_path):
+    """
+    Reads a reaction rate output file with a header containing reaction numbers.
+
+    Args:
+        file_path (str): Path to the reaction rate file.
+
+    Returns:
+        pd.DataFrame: DataFrame with columns ['cell_number', 'physical_radius', <reaction_ids>].
+
+    Example:
+        >>> df = read_new_file("data/reaction_rates.dat")
+    """
     # Load the data using np.loadtxt and capture the header (first row) for reaction numbers
-    data = np.loadtxt(file_path, skiprows=1)  # Skip the first row (header) for now
+    data = np.loadtxt(file_path, skiprows=1)  # Skip the first row 
     
     # Read the header line separately
     header = np.loadtxt(file_path, max_rows=1, dtype=int)
 
     # Create a DataFrame for the data
-    # Assuming columns: CellNumber, PhysicalRadius, Rate1, Rate2, ...
-    columns = ['cell_number', 'physical_radius'] + [f'{i}' for i in header] #+ header.tolist()
+    columns = ['cell_number', 'physical_radius'] + [f'{i}' for i in header]
     
     # Create the DataFrame
     df = pd.DataFrame(data, columns=columns)
-    #df['reaction_number'] = header
     return df
 
 def process_side(side, multiplier, reaction_stoich, species_set):
-    """Process one side of the reaction equation (reactants or products)."""
+    """
+    Processes one side (reactants or products) of a reaction string.
+
+    Args:
+        side (str): Reaction side string (e.g., "2 H + 1 O2").
+        multiplier (int): -1 for reactants, +1 for products.
+        reaction_stoich (dict): Dictionary to accumulate net stoichiometric coefficients.
+        species_set (set): Set to accumulate all species encountered.
+
+    Returns:
+        None (modifies `reaction_stoich` and `species_set` in place)
+
+    Example:
+        >>> reaction_stoich = {}
+        >>> species_set = set()
+        >>> process_side("2 H + O2", -1, reaction_stoich, species_set)
+    """
     term_pattern = re.compile(r'([\d\.]+)\s*([A-Za-z0-9\-\+\(\)^`]+)')
     terms = side.split('+')
     
@@ -44,15 +77,19 @@ def process_side(side, multiplier, reaction_stoich, species_set):
 
 def parse_reaction_column(reaction_series):
     """
-    Process a column of reaction strings from a DataFrame and return stoichiometries and species.
-    
+    Parses a column of reaction strings and returns stoichiometry per reaction.
+
     Args:
-        reaction_series (pd.Series): Series of reaction strings like '1 A + 2 B -> 1 C'
-    
+        reaction_series (pd.Series): Series of reaction strings like '1 A + 2 B -> 1 C'.
+
     Returns:
         tuple:
-            - stoich_list: List of dicts mapping species to net stoichiometric coefficients
-            - transformed_species_list: Sorted list of transformed species
+            - stoich_list (list[dict]): List of dictionaries mapping species to net coefficients.
+            - transformed_species_list (list[str]): Sorted list of unique species (transformed).
+
+    Example:
+        >>> series = pd.Series(["2 H + O2 -> 2 H2O"])
+        >>> stoich, species = parse_reaction_column(series)
     """
     stoich_list = []
     species_set = set()

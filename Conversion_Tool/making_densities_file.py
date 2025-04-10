@@ -1,10 +1,39 @@
 """
-Gets the number densities and Temperature at a specific radius for all species
+Module for extracting number densities and temperature profiles of species from AIOLOS outputs.
+
+This script supports:
+- Loading and aggregating data across species.
+- Extracting data at specific radial indices or over all radial bins.
+- Writing outputs to file for later analysis or plotting.
+
+Functions:
+- get_essential_data: Load and average simulation data for selected species.
+- process_timesteps: Process multiple timesteps and record values at a specific radius.
+- process_radial_profile: Extract full radial profile of number densities and temperature.
 """
 import numpy as np
 import os
 
 def get_essential_data(directory, sim, timestep, species, rplanet=-1):
+    """
+    Load number density and temperature data for a set of species at a specific timestep.
+
+    Args:
+        directory (str): Path to directory containing output files.
+        sim (str): Simulation name prefix used in filenames.
+        timestep (int): Simulation timestep number.
+        species (list): List of species names to load.
+        rplanet (float): Planet radius for normalizing radius column (default: -1 to auto-detect from file).
+
+    Returns:
+        tuple:
+            - avg_T (np.ndarray): Array of average temperatures at each radial bin.
+            - r (np.ndarray): Array of normalized radius values.
+            - all_species_datas (list): List of arrays, one per species, with extracted columns.
+
+    Example:
+        >>> avg_T, r, datas = get_essential_data("data/", "sim1", 10, ["H", "He"])
+    """
     # Load first species to get dimensions
     data_h0 = np.genfromtxt(
     f"{directory}output_{sim}_{species[0]}_t{timestep}.dat",
@@ -15,7 +44,7 @@ def get_essential_data(directory, sim, timestep, species, rplanet=-1):
     filling_values=np.nan  # Replace invalid entries like '-' with NaN
 )
 
-    max_rr = data_h0.shape[0] #len(data_h0)
+    max_rr = data_h0.shape[0]
     
     if rplanet < 0:
         rp = data_h0[2, 0]  # Planet radius from data if not provided
@@ -59,27 +88,30 @@ def get_essential_data(directory, sim, timestep, species, rplanet=-1):
 
 def process_timesteps(directory, sim, timesteps, species, rplanet=1.37e8, index=10, output_file="qt_densities.txt", output_file_2="qt_conditions.txt"):
     """
-    Process multiple timesteps and write number densities at a specific index to a file.
-    Returns a nested dictionary with the data and list of average temperatures.
+    Process multiple timesteps and write number densities at a specific index to a file. Returns a nested dictionary with the data and list of average temperatures.
     
     Args:
-        directory: Path to simulation directory
-        sim: Simulation name prefix
-        timesteps: List of timestep numbers to process
-        species: List of species specifications
-        rplanet: Planet radius (default 1.37e8 cm)
-        index: Radial index to extract data from (default 10)
-        output_file: Name of output text file
-        
+        directory (str): Path to simulation output directory.
+        sim (str): Simulation name prefix.
+        timesteps (list[int]): List of timestep indices to process.
+        species (list[str]): List of species names.
+        rplanet (float): Planet radius in cm (default: 1.37e8 cm).
+        index (int): Radial index to extract (default: 10).
+        output_file (str): Filename for species densities output.
+        output_file_2 (str): Filename for temperature output.
+
     Returns:
-        tuple: (avg_T_list, data_dict) where:
-            - avg_T_list: List of average temperatures at the specified index
-            - data_dict: Nested dictionary {'timestep': {'species': num_den}}
+        tuple:
+            - avg_T_list (list[float]): List of average temperatures at the specified radial index.
+            - data_dict (dict): Nested dictionary of number densities per timestep and species.
+
+    Example:
+        >>> process_timesteps("data/", "sim1", [0, 5, 10], ["H", "He"])
     """
     
     avg_T_list = []
     data_dict = {}
-    header = "Time_s\t" #+ "\t".join([spc[0] for spc in species])
+    header = "Time_s\t"
     with open(output_file, 'w') as f_densities, open(output_file_2, 'w') as f_temps:
         # Write headers
         f_densities.write(header + "\n")
@@ -124,26 +156,29 @@ def process_timesteps(directory, sim, timesteps, species, rplanet=1.37e8, index=
 
 def process_radial_profile(directory, sim, timestep, species, rplanet=1.37e8, output_file="qt_densities.txt", output_file_2="qt_conditions.txt"):
     """
-    Processes number densities and temperature across all radial cells for a single timestep.
-    
+    Processes and writes out full radial profiles of number densities and temperatures for all specified species at a single timestep.
+
     Args:
-        directory: Path to simulation directory
-        sim: Simulation name prefix
-        timestep: Timestep number to process
-        species: List of species specifications
-        rplanet: Planet radius (default 1.37e8 cm)
-        output_file: Output text file for species densities
-        output_file_2: Output text file for temperature profile
+        directory (str): Path to simulation output directory.
+        sim (str): Simulation name prefix.
+        timestep (int): Timestep index to process.
+        species (list[str]): List of species names.
+        rplanet (float): Planet radius in cm (default: 1.37e8 cm).
+        output_file (str): Output file for number densities.
+        output_file_2 (str): Output file for temperatures.
 
     Returns:
-        tuple: (avg_T_list, data_dict) where:
-            - avg_T_list: List of average temperatures at each radial index
-            - data_dict: Nested dictionary {radius_index: {species: num_den}}
+        tuple:
+            - avg_T_list (list[float]): Average temperatures at each radial bin.
+            - data_dict (dict): Nested dictionary {radius_index: {species: num_den}}.
+
+    Example:
+        >>> process_radial_profile("data/", "sim1", 10, ["H", "He"])
     """
     avg_T_list = []
     data_dict = {}
 
-    header = "Cell_Number\t" # + "\t".join([spc[0] for spc in species])
+    header = "Cell_Number\t"
     
     with open(output_file, 'w') as f_densities, open(output_file_2, 'w') as f_temps:
         # Write headers

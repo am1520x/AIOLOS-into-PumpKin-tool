@@ -1,15 +1,34 @@
+"""
+This script provides functions for parsing and transforming chemical reaction data from the AIOLOS simulation for feeding into the PumpKin analysis code.
+
+The functions here:
+- Parse reaction lines from text into structured representations.
+- Convert species and reaction strings to standardized notation.
+- Generate stoichiometry mappings and a complete species list.
+
+Useful for preprocessing input for chemical solvers or simulations.
+
+Functions:
+- transform_species_set: Standardizes species notation.
+- process_reaction_line: Converts a raw reaction line into a cleaned-up format.
+- process_side: Parses either side of a reaction and extracts stoichiometry.
+- parse_reaction_data: Parses full reaction data from annotated text into structured lists.
+"""
 import re
 
-# --- Helper Functions ---
 def transform_species_set(species_set):
     """
     Apply replacement rules to all species in the set.
     
     Args:
-        species_set (set): Original set of species names
+        species_set (set): Original set of species names.
         
     Returns:
-        set: New set with transformed species names
+        set: New set with transformed species names.
+
+    Example:
+        >>> transform_species_set({"e-", "p", "H2", "CO", "eV"})
+        {'E', '^+', 'H2', 'CO', ''}
     """
     replacements = [
         ('e-', 'E'),
@@ -31,7 +50,23 @@ def transform_species_set(species_set):
     return transformed_set
 
 def process_reaction_line(line):
-    """Process a single reaction line and return modified components."""
+    """
+    Process and standardize a single reaction line string.
+
+    Removes stoichiometric numbers and applies standardized replacements to make it like PumpKin inputs.
+
+    Args:
+        line (str): A raw reaction string (e.g., from a log or input file).
+
+    Returns:
+        str: A standardized reaction string.
+
+    Example:
+        >>> process_reaction_line("2 H2 + O2 -> 2 H2O")
+        'H2+O2=>H2O'
+        >>> process_reaction_line("2 Hp + O- -> 2 H2O")
+        'H^++O^-=>H2O'
+    """
     # Remove stoichiometric numbers
     modified = re.sub(r'\b[\d\.]+\s+', '', line)
     
@@ -53,7 +88,26 @@ def process_reaction_line(line):
     return modified
 
 def process_side(side, multiplier, reaction_stoich, species_set):
-    """Process one side of reaction equation (reactants or products)."""
+    """
+    Process one side of a reaction to extract stoichiometric coefficients and species.
+
+    Updates the reaction_stoich dictionary and species_set in place.
+
+    Args:
+        side (str): The reaction side string (reactants or products).
+        multiplier (int): -1 for reactants, +1 for products.
+        reaction_stoich (dict): Dictionary of stoichiometry (modified in place).
+        species_set (set): Set of species encountered (modified in place).
+
+    Returns:
+        None
+
+    Example:
+        >>> stoich, species = {}, set()
+        >>> process_side("2 H2 + O2", -1, stoich, species)
+        >>> stoich
+        {'H2': -2.0, 'O2': -1.0}
+    """
     term_pattern = re.compile(r'([\d\.]+)\s*([A-Za-z0-9\-\+\(\)^`]+)')
     terms = side.split('+')
     
@@ -75,7 +129,9 @@ def process_side(side, multiplier, reaction_stoich, species_set):
 def parse_reaction_data(reac_text):
     """
     Parse reaction data from text and return reaction components.
-    
+    Handles reaction lines starting with `$` (thermo) or `%` (photo), splits equations,
+    calculates net stoichiometry, and identifies unique species.
+
     Args:
         reac_text (str): The input text containing reaction data
         
@@ -84,6 +140,18 @@ def parse_reaction_data(reac_text):
             - reaction_list: List of reaction equations
             - stoich_list: List of stoichiometry dictionaries
             - species_list: Sorted list of unique species
+    Example:
+        >>> txt = '''
+        ... $ H2 + O -> OH + H | example
+        ... % CO + photon -> C + O | photolysis
+        ... '''
+        >>> r, s, species = parse_reaction_data(txt)
+        >>> r[0]
+        'H2 + O -> OH + H'
+        >>> s[0]['H2']
+        -1.0
+        >>> 'O' in species
+        True
     """
     reaction_list = []
     stoich_list = []
@@ -102,7 +170,7 @@ def parse_reaction_data(reac_text):
                 continue
 
             eq_str = parts[0].strip()
-            reaction_list.append(eq_str)  # Store original for processing
+            reaction_list.append(eq_str)  
             
             # Process stoichiometry
             reaction_stoich = {}

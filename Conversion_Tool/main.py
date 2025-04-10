@@ -7,7 +7,7 @@ from processing_aiolos_reac_file import parse_reaction_data, process_reaction_li
 from making_densities_file import process_timesteps
 from making_rates_file import make_rates
 
-def process_reaction_files(input_file='thermo.reac'):
+def process_reaction_files(input_file='steamfull_step3.reac'):
     """Process Aiolos reaction files and generate output files"""
     try:
         with open(input_file, 'r') as f:
