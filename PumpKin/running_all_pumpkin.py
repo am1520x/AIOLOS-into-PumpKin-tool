@@ -2,7 +2,7 @@ import subprocess
 import re
 
 # Number of spatial cells
-num_cells = 181
+num_cells = 180
 
 # Path to WSL PumpKin directory and input.txt file
 pumpkin_dir = '/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_New'
@@ -40,10 +40,15 @@ for cell_index in range(num_cells):
 
     # Step 2: Run PumpKin with current input
     result = subprocess.run(command_base, input=input_data, capture_output=True, text=True, shell=True)
+    if result.returncode != 0:
+        print(f"PumpKin exited with error code {result.returncode} at cell {cell_index}")
+
+    # Combine stdout and stderr for debugging
+    output_combined = result.stdout + "\n--- STDERR ---\n" + result.stderr
 
     # Step 3: Save unique output
     output_filename = f"pumpkin_output_cell_{cell_index:03}.txt"
     with open(output_filename, "w") as f:
-        f.write(result.stdout)
+        f.write(output_combined)
 
-print("✅ All cells processed and outputs saved.")
+print("All cells processed and outputs saved.")
