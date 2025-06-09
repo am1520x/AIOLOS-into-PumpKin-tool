@@ -522,7 +522,7 @@ def main(
 if __name__ == "__main__":
     # Example usage:
     main(
-        data_dir="./Outputs/",
+        data_dir="./",
         temp_file_path="../qt_conditions.txt",
         species_list=["H", "H2", "O", "OH"],
         outdir="./Plots/",
