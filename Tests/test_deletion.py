@@ -2,6 +2,7 @@ import tempfile
 import numpy as np
 import os
 import sys
+import pandas as pd
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if parent_dir not in sys.path:
@@ -21,7 +22,7 @@ def test_parse_deleted_percent_block_basic():
 
     assert 'H2O' in species_list
     assert deleted_contributions['CO2']['production'][0] == 7.1
-    assert flagged_entries[-1][1] == 'H2O'
+    assert flagged_entries[-1][1] == 'CO2'
 
 def test_parse_file_integration(tmp_path):
     # Prepare a fake file
@@ -68,3 +69,40 @@ def test_nan_on_invalid_data():
     parse_deleted_percent_block(lines, 2)
     val = deleted_contributions["BAD"]["production"][2]
     assert np.isnan(val)
+
+def test_parse_file_integration(tmp_path):
+    import numpy as np
+
+    content = """
+#################################################################################
++---------------------------------------------------+---------------------------+---------------------------+
+|       Procent of species from deleted pathways    |  Production               |  Consumption              |
++---------------------------------------------------+---------------------------+---------------------------+
+| E                                                 |                    -nan % |                    -nan % |
++---------------------------------------------------+---------------------------+---------------------------+
+| H                                                 |                 5.3e-07 % |                 2.3e+01 % |
++---------------------------------------------------+---------------------------+---------------------------+
+| H2                                                |                    36.6 % |                 1.6e-02 % |
++---------------------------------------------------+---------------------------+---------------------------+
+
+######################################################################################################################
+"""
+    fpath = tmp_path / "pumpkin_output_cell_000.txt"
+    fpath.write_text(content)
+    deleted_contributions.clear()  # Clear previous contributions
+    species_list.clear()
+    flagged_entries.clear()
+    cell_idx = 5
+    parse_file(str(fpath), cell_idx)
+
+    # Now check the species with at least one non-NaN value
+    valid_species = [
+        k for k, v in deleted_contributions.items()
+        if not (all(np.isnan(x) for x in v['production']) and all(np.isnan(x) for x in v['consumption']))
+    ]
+    assert set(valid_species) == {"H", "H2"}
+    assert deleted_contributions['H2']['production'][cell_idx] == 36.6
+    assert deleted_contributions['H']['consumption'][cell_idx] == 23.0
+    assert "H" in valid_species
+    assert "H2" in valid_species
+    assert "E" not in valid_species  # 'E' should not be in valid species

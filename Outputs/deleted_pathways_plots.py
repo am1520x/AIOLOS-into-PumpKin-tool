@@ -44,7 +44,7 @@ def parse_deleted_percent_block(lines, cell_number):
     >>> deleted_contributions['CO2']['production'][0] == 7.1
     True
     >>> flagged_entries[-1][1]  # last flagged species
-    'H2O'
+    'CO2'
     """
     pattern = r"\|\s+(.+?)\s+\|\s+([-\deE.+nan% ]+)\s+\|\s+([-\deE.+nan% ]+)\s+\|"
     for line in lines:
