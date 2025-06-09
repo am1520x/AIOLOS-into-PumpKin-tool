@@ -180,7 +180,7 @@ def main(
     num_cells=233,
     use_multi_line_parser=True,
     top_n_pathways=25,
-    save_plot_path=None
+    save_plot_path="./TotalPathwayRates.png"
 ):
     """
     Main driver: parses all cell files, aggregates and plots pathway data.
