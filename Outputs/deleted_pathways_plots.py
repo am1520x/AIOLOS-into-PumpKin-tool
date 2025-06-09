@@ -8,7 +8,7 @@ import traceback
 from glob import glob
 from collections import defaultdict
 
-DATA_DIR = "/content/"  # path to directory containing all pumpkin_output_cell_*.txt files
+DATA_DIR = ""  # path to directory containing all pumpkin_output_cell_*.txt files
 N_CELLS = 175
 
 deleted_contributions = defaultdict(lambda: {"production": [np.nan] * N_CELLS, "consumption": [np.nan] * N_CELLS})
