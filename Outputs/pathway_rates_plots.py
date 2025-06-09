@@ -335,7 +335,7 @@ def main(
         valid_rates = [r for r in rates if isinstance(r, (int, float))]
         max_rate = max(valid_rates) if valid_rates else 0.0
         print(f"Pathway: {p[:80]}{'...' if len(p) > 80 else ''}, Max rate: {max_rate:.2e}, Nonzero points: {nonzero_count}")
-    print(pathway_data.keys())
+    # print(pathway_data.keys())
 
 if __name__ == "__main__":
     main()
