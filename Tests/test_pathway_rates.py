@@ -65,8 +65,8 @@ def test_parse_multi_line_pathway_table_multistep():
     assert any('H2 + O2' in k for k in d)
     assert abs(list(d.values())[0] - 1.0e-2) < 1e-8
 
-
-"""
+def test_parse_multi_line_pathway_table_complex_block():
+    content = """
 +---------------------------------------------------+---------------------------+
 |       Pathway                                     |       Rate of pathway     |
 +---------------------------------------------------+---------------------------+
@@ -86,3 +86,26 @@ def test_parse_multi_line_pathway_table_multistep():
 +---------------------------------------------------+---------------------------+
 #################################################################################
 """
+    # Call your parser
+    result = parse_multi_line_pathway_table(content)
+    # Check that only the pathways with rates are present
+    assert len(result) == 6  # Only 6 have rates, 2 are blank and should be skipped
+
+    # The actual keys will look like e.g. "(H2+OH=>H2O+H)", "(H+H2O=>OH+H2)", etc.
+    # The clean_step logic wraps them in parentheses as in your code.
+
+    expected = {
+        "(H2+OH=>H2O+H)": 5.248e8,
+        "(H+H2O=>OH+H2)": 5.2465e8,
+        "(H+O2H=>O2+H2)": 3027.0,
+        "(H+O^+=>O+S1)": 3025.98,
+        "(OH=>O+H)": 2945.5,
+        "(H+H2^+=>H2+S1)": 2797.48
+    }
+    for k, v in expected.items():
+        assert k in result, f"Missing pathway: {k}"
+        assert abs(result[k] - v) < 1e-3, f"Value mismatch for {k}: {result[k]} vs {v}"
+
+    # Check that no blank/empty rates have been added
+    for k in result:
+        assert result[k] != '' and result[k] is not None

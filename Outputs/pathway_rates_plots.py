@@ -134,7 +134,7 @@ def parse_single_line_pathway_table(file_content):
     past_header_separator = False
 
     header_content_pattern = re.compile(r"^\|.*Rate of pathway.*\|")
-    data_line_pattern = re.compile(r"\|\s*(.+?\s*\(\s*\d+\)\s*)\s*\|\s*([-\deE\+\-\.]+)\s*\|")
+    data_line_pattern = re.compile(r"\|\s*(.+?\s*\(\s*\d+\s*\)\s*)\s*\|\s*([-\deE\+\-\.]+)\s*\|")
     separator_pattern = re.compile(r"^\+[-+]+\+\s*$")
     end_marker_pattern = re.compile(r"^#+\s*$")
 
@@ -164,7 +164,7 @@ def parse_single_line_pathway_table(file_content):
                 print(f"--- Found data line at line {i} ---")
                 raw_pathway_part = data_match.group(1).strip()
                 rate_str = data_match.group(2).strip()
-                pathway_str = re.sub(r'\s*\(\s*\d+\)\s*$', '', raw_pathway_part).strip()
+                pathway_str = re.sub(r'\s*\(\s*\d+\s*\)\s*$', '', raw_pathway_part).strip()
                 try:
                     rate = float(rate_str)
                     pathway_dict[pathway_str] = rate
