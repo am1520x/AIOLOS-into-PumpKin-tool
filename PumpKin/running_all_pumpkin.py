@@ -2,7 +2,7 @@ import subprocess
 import re
 
 # Number of spatial cells
-num_cells = 180
+num_cells = 233
 
 # Path to WSL PumpKin directory and input.txt file
 pumpkin_dir = '/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_New'
