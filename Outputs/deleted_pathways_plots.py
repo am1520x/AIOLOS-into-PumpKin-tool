@@ -149,7 +149,7 @@ def parse_file(filepath, cell_number):
         traceback.print_exc()
 
 
-def plot_deleted_contributions():
+def plot_deleted_contributions(save_path=None, show=True):
     """
     Plot heatmaps of production/consumption % from deleted pathways for each species vs cell.
 
@@ -199,12 +199,18 @@ def plot_deleted_contributions():
     axs[1].set_ylabel("Species")
     axs[1].set_xlim(0, N_CELLS)
     plt.tight_layout()
-    plt.show()
-
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300)
+        print(f"Plot saved to {save_path}")
+    if show:
+        plt.show()
+    else:
+        plt.close()
 
 def main():
     """
     Main driver function. Parses all cell files and plots results.
+    Make sure you are in the directory folder of the data not this code, and run 'python Outputs/deleted_pathways_plots.py'.
 
     Returns
     -------
@@ -228,7 +234,8 @@ def main():
 
     print("\nGenerating plots...")
     if species_list:
-        plot_deleted_contributions()
+        plot_deleted_contributions(save_path="deleted_contributions.png", show=False)
+        print("Plots generated and saved as 'deleted_contributions.png'.")
     else:
         print("No species data found to plot deleted contributions.")
 
