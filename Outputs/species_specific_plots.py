@@ -24,15 +24,15 @@ def parse_all_species_pathway_tables_multiline(text):
     -------
     >>> test_block = '''
     ... | Pathway | Production of H | Consumption of H |
-    ... +---------+-----------------+-----------------+
-    ... | 1 * (A=>B) (0) | 100% | 40% |
-    ... +---------+-----------------+-----------------+
+    ... +---------------------------------------------------+---------------------------+---------------------------+
+    ... | 1 * (H+H2O=>OH+H2)             5.2465e+08 |                       0 % |                      91 % |
+    ... +---------------------------------------------------+---------------------------+---------------------------+
     ... # End block
     ... '''
     >>> df = parse_all_species_pathway_tables_multiline(test_block)
     >>> df.iloc[0]['species']
     'H'
-    >>> abs(df.iloc[0]['rate']) == 0  # No rate in this test
+    >>> bool(abs(df.iloc[0]['rate']) == 5.2465e+08)  # No rate in this test
     True
     """
     lines = text.splitlines()
