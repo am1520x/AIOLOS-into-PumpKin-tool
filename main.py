@@ -57,7 +57,7 @@ class AIOLOSPumpKinPipeline:
         if not hasattr(self.args, 'output_folder'):
             self.args.output_folder = 'Testing'
         if not hasattr(self.args, 'timestep'):
-            self.args.timestep = 15
+            self.args.timestep = 85
         self.setup_directories()
         self.validate_configuration()
     
@@ -194,7 +194,7 @@ class AIOLOSPumpKinPipeline:
             processing_type = getattr(self.args, 'processing_type', 'timesteps')
             
             if processing_type == 'radial_profile':
-                timestep = getattr(self.args, 'timestep', 15)
+                timestep = getattr(self.args, 'timestep', 85)
                 timesteps = [timestep]
                 avg_T, num_den = process_radial_profile(
                     directory=self.args.simulation_dir,
@@ -474,8 +474,8 @@ For more information, see README.md
                        help='Type of processing: timesteps or radial_profile (default: timesteps)')
     parser.add_argument('--output-folder', default='Testing',
                        help='Output folder name in PumpKin/src/Examples/ (default: Testing)')
-    parser.add_argument('--timestep', type=int, 
-                       help='Timestep for radial profile processing (default: 15)')
+    parser.add_argument('--timestep', type=int, default=85,
+                       help='Timestep for radial profile processing (default: 85)')
     
     # File naming
     parser.add_argument('--output-prefix', type=str, default='pumpkin_output_cell',
