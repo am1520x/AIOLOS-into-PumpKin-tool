@@ -7,6 +7,10 @@ import seaborn as sns
 import traceback
 from glob import glob
 from collections import defaultdict
+from plot_styles import (
+    apply_plot_style, get_species_style, get_species_color, 
+    get_species_linestyle, format_species_name
+)
 
 DATA_DIR = ""  # path to directory containing all pumpkin_output_cell_*.txt files
 N_CELLS = 233
@@ -187,20 +191,30 @@ def plot_deleted_contributions(save_path=None, show=True):
         traceback.print_exc()
         return
 
+    # Apply consistent styling
+    apply_plot_style()
+    
     fig, axs = plt.subplots(2, 1, figsize=(16, 12), sharex=True)
     cell_labels = np.arange(N_CELLS)
-    sns.heatmap(prod_matrix, xticklabels=10, yticklabels=species_order, cmap="Reds", ax=axs[0], cbar_kws={'label': 'Production %'})
-    axs[0].set_title("Production % from Deleted Pathways")
+    
+    # Format species names for y-axis
+    formatted_species = [format_species_name(sp) for sp in species_order]
+    
+    sns.heatmap(prod_matrix, xticklabels=10, yticklabels=formatted_species, 
+                cmap="Reds", ax=axs[0], cbar_kws={'label': 'Production %'})
+    axs[0].set_title("Production % from Deleted Pathways", fontweight='bold')
     axs[0].set_ylabel("Species")
     axs[0].set_xlim(0, N_CELLS)
-    sns.heatmap(cons_matrix, xticklabels=10, yticklabels=species_order, cmap="Blues", ax=axs[1], cbar_kws={'label': 'Consumption %'})
-    axs[1].set_title("Consumption % from Deleted Pathways")
+    
+    sns.heatmap(cons_matrix, xticklabels=10, yticklabels=formatted_species, 
+                cmap="Blues", ax=axs[1], cbar_kws={'label': 'Consumption %'})
+    axs[1].set_title("Consumption % from Deleted Pathways", fontweight='bold')
     axs[1].set_xlabel("Radial Cell Index")
     axs[1].set_ylabel("Species")
     axs[1].set_xlim(0, N_CELLS)
     plt.tight_layout()
     if save_path is not None:
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Plot saved to {save_path}")
     if show:
         plt.show()

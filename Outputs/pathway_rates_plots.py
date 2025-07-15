@@ -2,6 +2,7 @@ import re
 import os
 import traceback
 import matplotlib.pyplot as plt
+from plot_styles import apply_plot_style, get_pathway_color
 
 def parse_multi_line_pathway_table(file_content):
     """
@@ -298,21 +299,31 @@ def main(
         nonzero_count = sum(1 for r in pathway_data.get(p_str, []) if r > 0)
         print(f"Pathway: {p_str[:80]}{'...' if len(p_str) > 80 else ''}, Total Rate: {total_rate:.2e}, Nonzero cells: {nonzero_count}")
 
+    # Apply consistent styling
+    apply_plot_style()
+    
     plt.figure(figsize=(16, 10))
-    for p_str, _ in top_pathways_to_plot:
+    
+    # Use consistent colors for pathways
+    colors = plt.cm.tab20(range(len(top_pathways_to_plot)))
+    
+    for i, (p_str, _) in enumerate(top_pathways_to_plot):
         rates = pathway_data.get(p_str, [])
         x_vals, y_vals = zip(*[(i, rate) for i, rate in enumerate(rates) if isinstance(rate, (int, float)) and rate > 0]) if rates else ([], [])
         if x_vals:
-            plt.plot(x_vals, y_vals, marker='.', linestyle='-', linewidth=0.8, markersize=4, label=p_str)
+            plt.plot(x_vals, y_vals, marker='o', linestyle='-', linewidth=2, 
+                    markersize=6, label=p_str, color=colors[i])
+    
     plt.xscale('log')
     plt.yscale('log')
     plt.xlabel("Cell Number (log)")
     plt.ylabel("Pathway Rate (log)")
-    plt.title(f"Top {len(top_pathways_to_plot)} Pathway Rates vs Cell Number (Log-Log)")
-    plt.legend(title='Pathway', loc='upper left', bbox_to_anchor=(1.01, 1), fontsize=7)
+    plt.title(f"Top {len(top_pathways_to_plot)} Pathway Rates vs Cell Number (Log-Log)", fontweight='bold')
+    plt.legend(title='Pathway', loc='upper left', bbox_to_anchor=(1.01, 1), fontsize=8)
+    plt.grid(True, alpha=0.3)
     plt.tight_layout(rect=[0, 0, 0.85, 1])
     if save_plot_path:
-        plt.savefig(save_plot_path, dpi=300)
+        plt.savefig(save_plot_path, dpi=300, bbox_inches='tight')
         print(f"Plot saved to {save_plot_path}")
     plt.show()
 

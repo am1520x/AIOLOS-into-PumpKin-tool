@@ -5,6 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import defaultdict
+from plot_styles import (
+    get_species_style, get_species_color, get_species_linestyle,
+    format_species_name, create_species_legend, apply_plot_style,
+    get_pathway_color
+)
 
 def parse_all_species_pathway_tables_multiline(text):
     """
@@ -207,37 +212,46 @@ def plot_top_species_pathways_by_rate(cell_data_dict, species_name, top_n=3, sav
     prod_ranked = sorted(prod_pathway_data.items(), key=lambda kv: sum(kv[1]), reverse=True)[:top_n]
     cons_ranked = sorted(cons_pathway_data.items(), key=lambda kv: sum(kv[1]), reverse=True)[:top_n]
 
+    # Apply consistent styling
+    apply_plot_style()
     fig, axes = plt.subplots(1, 2, figsize=(16, 6), sharex=True, sharey=True)
-    fig.suptitle(f"Top {top_n} Pathways Producing and Consuming {species_name}", fontsize=14)
+    formatted_species = format_species_name(species_name)
+    fig.suptitle(f"Top {top_n} Pathways Producing and Consuming {formatted_species}", fontsize=14)
 
+    # Production pathways
     ax = axes[0]
-    for path, rates in prod_ranked:
+    for i, (path, rates) in enumerate(prod_ranked):
         x_vals = cell_numbers
         y_vals = rates
         if any(r > 0 for r in y_vals):
-            ax.plot(x_vals, y_vals, marker='.', label=path)
-    ax.set_title("Production Pathways")
+            color = get_pathway_color('production') if i == 0 else plt.cm.Greens(0.7 - i*0.2)
+            ax.plot(x_vals, y_vals, marker='o', label=path, color=color, linewidth=2)
+    ax.set_title("Production Pathways", fontsize=12, fontweight='bold')
     ax.set_xlabel("Cell Number")
     ax.set_ylabel("Rate")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
 
+    # Consumption pathways
     ax = axes[1]
-    for path, rates in cons_ranked:
+    for i, (path, rates) in enumerate(cons_ranked):
         x_vals = cell_numbers
         y_vals = rates
         if any(r > 0 for r in y_vals):
-            ax.plot(x_vals, y_vals, marker='.', label=path)
-    ax.set_title("Consumption Pathways")
+            color = get_pathway_color('consumption') if i == 0 else plt.cm.Reds(0.7 - i*0.2)
+            ax.plot(x_vals, y_vals, marker='o', label=path, color=color, linewidth=2)
+    ax.set_title("Consumption Pathways", fontsize=12, fontweight='bold')
     ax.set_xlabel("Cell Number")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.legend(fontsize=8)
+    ax.grid(True, alpha=0.3)
 
     plt.tight_layout(rect=[0, 0, 1, 0.95])
     if save_path:
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Plot saved: {save_path}")
     plt.close(fig)
 
@@ -266,18 +280,26 @@ def plot_species_net_rate(cell_data_dict, species_name, save_path=None):
         net_rate = prod_total - cons_total
         net_rates.append(net_rate)
 
+    # Apply consistent styling
+    apply_plot_style()
+    species_style = get_species_style(species_name)
+    formatted_species = format_species_name(species_name)
+    
     plt.figure(figsize=(10, 6))
-    plt.plot(cell_numbers, net_rates, marker='o')
-    plt.axhline(0, color='gray', linestyle='--', linewidth=1)
+    plt.plot(cell_numbers, net_rates, marker='o', 
+             color=species_style['color'], 
+             linestyle=species_style['linestyle'],
+             linewidth=2, markersize=8)
+    plt.axhline(0, color='gray', linestyle=':', linewidth=1, alpha=0.7)
     plt.xscale('log')
     plt.yscale('symlog', linthresh=1e-2)
     plt.xlabel("Cell Number (log)")
     plt.ylabel("Net Rate (Production − Consumption)")
-    plt.title(f"Net Rate of {species_name} per Cell (Log-SymLog)")
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.title(f"Net Rate of {formatted_species} per Cell (Log-SymLog)", fontweight='bold')
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.3)
     plt.tight_layout()
     if save_path:
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Plot saved: {save_path}")
     plt.close()
 
@@ -310,15 +332,28 @@ def plot_pathway_heatmap(cell_data_dict, species_name, save_path=None):
         print(f"No data found for species {species_name}")
         return
 
+    # Apply consistent styling
+    apply_plot_style()
+    formatted_species = format_species_name(species_name)
+    species_color = get_species_color(species_name)
+    
     pivot = df_all.pivot_table(index="pathway", columns="cell", values="rate", aggfunc="sum", fill_value=0)
     plt.figure(figsize=(12, max(4, 0.5 * len(pivot))))
-    sns.heatmap(np.log10(pivot + 1e-5), annot=False, cmap="viridis", cbar_kws={'label': 'log10(rate)'})
-    plt.title(f"Heatmap of Pathway Rates for {species_name}")
+    
+    # Create custom colormap based on species color
+    from matplotlib.colors import LinearSegmentedColormap
+    colors = ['white', species_color]
+    n_bins = 100
+    custom_cmap = LinearSegmentedColormap.from_list('custom', colors, N=n_bins)
+    
+    sns.heatmap(np.log10(pivot + 1e-5), annot=False, cmap=custom_cmap, 
+                cbar_kws={'label': 'log₁₀(rate)'})
+    plt.title(f"Heatmap of Pathway Rates for {formatted_species}", fontweight='bold')
     plt.xlabel("Cell")
     plt.ylabel("Pathway")
     plt.tight_layout()
     if save_path:
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Plot saved: {save_path}")
     plt.close()
 
@@ -350,18 +385,27 @@ def plot_stacked_production_fraction(cell_data_dict, species_name, top_n=3, save
         print(f"No production data found for species {species_name}")
         return
 
+    # Apply consistent styling
+    apply_plot_style()
+    formatted_species = format_species_name(species_name)
+    
     top_pathways = sorted(contrib_data.items(), key=lambda x: sum(x[1]), reverse=True)[:top_n]
     df_plot = pd.DataFrame({p: r for p, r in top_pathways}, index=cell_numbers)
     df_plot_frac = df_plot.div(df_plot.sum(axis=1), axis=0).fillna(0)
 
-    df_plot_frac.plot(kind='area', stacked=True, figsize=(12, 6))
-    plt.title(f"Top {top_n} Production Pathway Fractions for {species_name}")
+    # Create custom colors for pathways
+    colors = plt.cm.Set3(np.linspace(0, 1, len(df_plot_frac.columns)))
+    
+    df_plot_frac.plot(kind='area', stacked=True, figsize=(12, 6), color=colors, alpha=0.8)
+    plt.title(f"Top {top_n} Production Pathway Fractions for {formatted_species}", fontweight='bold')
     plt.xlabel("Cell Number")
     plt.ylabel("Fraction of Production Rate")
     plt.ylim(0, 1)
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.grid(True, alpha=0.3)
     plt.tight_layout()
     if save_path:
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Plot saved: {save_path}")
     plt.close()
 
@@ -411,14 +455,25 @@ def plot_pathway_species_heatmap(matrix, save_path=None):
     if matrix.empty:
         print("Pathway-species matrix is empty.")
         return
+    
+    # Apply consistent styling
+    apply_plot_style()
+    
     plt.figure(figsize=(12, min(12, 0.5 * len(matrix))))
-    sns.heatmap(matrix, cmap="Greys", cbar=False)
-    plt.title("Pathway–Species Occurrence Matrix")
+    sns.heatmap(matrix, cmap="Blues", cbar=False, 
+                linewidths=0.5, linecolor='white')
+    plt.title("Pathway–Species Occurrence Matrix", fontweight='bold')
     plt.xlabel("Species")
     plt.ylabel("Pathway")
+    
+    # Format species names on x-axis
+    ax = plt.gca()
+    x_labels = [format_species_name(label.get_text()) for label in ax.get_xticklabels()]
+    ax.set_xticklabels(x_labels, rotation=45, ha='right')
+    
     plt.tight_layout()
     if save_path:
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Plot saved: {save_path}")
     plt.close()
 
@@ -449,20 +504,28 @@ def plot_species_net_percentage_vs_temperature(cell_data_dict, temp_file_path, s
         if not df_species.empty:
             net_pct_total = df_species['net_pct'].sum()
             net_pct_data.append((T, net_pct_total))
+    
+    # Apply consistent styling
+    apply_plot_style()
+    species_style = get_species_style(species_name)
+    formatted_species = format_species_name(species_name)
+    
     df_plot = pd.DataFrame(net_pct_data, columns=['Temperature', 'NetPct'])
     df_plot = df_plot.sort_values('Temperature')
     plt.figure(figsize=(10, 6))
-    plt.plot(df_plot['Temperature'], df_plot['NetPct'], marker='o')
-    plt.axhline(0, color='gray', linestyle='--', linewidth=1)
+    plt.plot(df_plot['Temperature'], df_plot['NetPct'], marker='o',
+             color=species_style['color'], linestyle=species_style['linestyle'],
+             linewidth=2, markersize=8)
+    plt.axhline(0, color='gray', linestyle=':', linewidth=1, alpha=0.7)
     if log_x:
         plt.xscale('log')
     plt.xlabel("Temperature (K)")
     plt.ylabel("Net Production − Consumption (%)")
-    plt.title(f"Net Production/Consumption % of {species_name} vs Temperature")
-    plt.grid(True, which='both', linestyle='--', linewidth=0.5)
+    plt.title(f"Net Production/Consumption % of {formatted_species} vs Temperature", fontweight='bold')
+    plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.3)
     plt.tight_layout()
     if save_path:
-        plt.savefig(save_path, dpi=300)
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
         print(f"Plot saved: {save_path}")
     plt.close()
 
@@ -492,10 +555,18 @@ def main(
     -------
     >>> # main("data/", "qt_conditions.txt", ["H", "H2"])
     """
+    # Apply consistent styling
+    apply_plot_style()
+    
     os.makedirs(outdir, exist_ok=True)
     cell_dict = load_all_cells_as_dict(data_dir)
-    for species in species_list:
-        print(f"Plotting for species: {species}")
+    
+    # Sort species list for consistent ordering
+    sorted_species = sorted(species_list)
+    
+    for species in sorted_species:
+        formatted_species = format_species_name(species)
+        print(f"Plotting for species: {formatted_species}")
         plot_top_species_pathways_by_rate(
             cell_dict, species, top_n=top_n,
             save_path=os.path.join(outdir, f"{species}_top_pathways.png"))
@@ -516,7 +587,7 @@ def main(
     plot_pathway_species_heatmap(
         matrix, save_path=os.path.join(outdir, "pathway_species_matrix.png")
     )
-    print("All plots generated.")
+    print("All plots generated with consistent formatting.")
 
 # If running directly:
 if __name__ == "__main__":

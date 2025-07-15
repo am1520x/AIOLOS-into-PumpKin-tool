@@ -4,6 +4,10 @@ import pandas as pd
 import re
 import traceback
 import os
+from plot_styles import (
+    apply_plot_style, get_species_style, get_species_color, 
+    get_species_linestyle, format_species_name
+)
 
 def plot_reaction_rates(
     reactions_file,
@@ -60,6 +64,9 @@ def plot_reaction_rates(
             print(f"Error: Number of transposed rates rows ({rates.shape[0]}) does not match the number of reactions ({len(reactions)}).")
             return
 
+        # Apply consistent styling
+        apply_plot_style()
+        
         # Create plot
         fig, axs = plt.subplots(2, 1, figsize=(14, 16), sharex=True)
 
@@ -73,13 +80,27 @@ def plot_reaction_rates(
         for i in reactions_to_plot_indices:
             reaction_name = reactions[i]
             reaction_rates_across_cells = rates[i, :]
-            ax.plot(cells, reaction_rates_across_cells, label=reaction_name, linewidth=0.8)
+            
+            # Extract species from reaction name to get consistent styling
+            # Simple heuristic: use first species mentioned
+            species_match = re.search(r'([A-Za-z]+[0-9]*[+-]?)', reaction_name)
+            if species_match:
+                species = species_match.group(1)
+                style = get_species_style(species)
+                color = style['color']
+                linestyle = style['linestyle']
+            else:
+                color = '#333333'
+                linestyle = '-'
+            
+            ax.plot(cells, reaction_rates_across_cells, label=reaction_name, 
+                   linewidth=2, color=color, linestyle=linestyle)
         ax.set_xscale('log')
         ax.set_yscale('log')
         ax.set_xlabel('Cell Number')
         ax.set_ylabel('Reaction Rate')
-        ax.set_title('Reaction Rate vs. Cell Number')
-        ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+        ax.set_title('Reaction Rate vs. Cell Number', fontweight='bold')
+        ax.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.3)
         ax.legend(title='Reaction', bbox_to_anchor=(1.05, 1), loc='upper left', fontsize='small', ncol=1)
 
         # Zoomed-in subplot (thresholded)
@@ -89,13 +110,26 @@ def plot_reaction_rates(
             reaction_name = reactions[i]
             reaction_rates_across_cells = rates[i, :]
             rates_filtered = np.where(reaction_rates_across_cells > zoom_threshold, reaction_rates_across_cells, np.nan)
-            ax_zoomed.plot(cells, rates_filtered, label=reaction_name, linewidth=0.8)
+            
+            # Extract species from reaction name to get consistent styling
+            species_match = re.search(r'([A-Za-z]+[0-9]*[+-]?)', reaction_name)
+            if species_match:
+                species = species_match.group(1)
+                style = get_species_style(species)
+                color = style['color']
+                linestyle = style['linestyle']
+            else:
+                color = '#333333'
+                linestyle = '-'
+            
+            ax_zoomed.plot(cells, rates_filtered, label=reaction_name, 
+                          linewidth=2, color=color, linestyle=linestyle)
         ax_zoomed.set_xscale('log')
         ax_zoomed.set_yscale('log')
         ax_zoomed.set_xlabel('Cell Number')
         ax_zoomed.set_ylabel('Reaction Rate')
-        ax_zoomed.set_title(f'Reaction Rate vs. Cell Number (Rates > {zoom_threshold:.0e})')
-        ax_zoomed.grid(True, which='both', linestyle='--', linewidth=0.5)
+        ax_zoomed.set_title(f'Reaction Rate vs. Cell Number (Rates > {zoom_threshold:.0e})', fontweight='bold')
+        ax_zoomed.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.3)
         ax_zoomed.set_ylim(bottom=zoom_threshold)
 
         plt.tight_layout()
@@ -103,7 +137,7 @@ def plot_reaction_rates(
 
         # Save the plot
         print(f"Saving plot to {save_path}")
-        plt.savefig(save_path, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close(fig)
         print("Plot saved successfully.")
 
