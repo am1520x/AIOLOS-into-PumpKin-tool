@@ -1,24 +1,31 @@
-import tempfile, os, sys
+import os
+import sys
 import numpy as np
 import pandas as pd
 
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from Outputs.species_specific_plots import parse_all_species_pathway_tables_multiline, load_all_cells_as_dict, compute_pathway_species_matrix 
+from Outputs.species_specific_plots import (
+    parse_all_species_pathway_tables_multiline,
+    load_all_cells_as_dict,
+    compute_pathway_species_matrix,
+)
+
 
 def test_parse_all_species_pathway_tables_multiline_basic():
-    text = '''
+    text = """
 | Pathway | Production of H | Consumption of H |
 +---+---+---+
 | 1 * (A=>B) 1202 | 22% | 5% |
 # End block
-'''
+"""
     df = parse_all_species_pathway_tables_multiline(text)
     assert "species" in df.columns
     assert "H" in df["species"].values
     assert abs(df.iloc[0]["production_pct"] - 22.0) < 1e-8
+
 
 def test_load_all_cells_as_dict(tmp_path):
     fpath = tmp_path / "pumpkin_output_cell_001.txt"
@@ -32,33 +39,36 @@ def test_load_all_cells_as_dict(tmp_path):
     assert 1 in d
     assert d[1]["species"].iloc[0] == "X"
 
+
 def test_basic_pathway_table_single_row():
-    block = '''
+    block = """
 |       Pathway                                     | Production of H           | Consumption of H          |
 +---------------------------------------------------+---------------------------+---------------------------+
 | 1 * (H+H2O=>OH+H2)             5.2465e+08 |                       0 % |                      91 % |
 +---------------------------------------------------+---------------------------+---------------------------+
 # End block
-'''
+"""
     df = parse_all_species_pathway_tables_multiline(block)
     assert len(df) == 1
-    assert df.iloc[0]['species'] == "H"
-    assert abs(df.iloc[0]['rate'] - 5.2465e8) < 1e-3
-    assert df.iloc[0]['consumption_pct'] == 91.0
-    assert df.iloc[0]['production_pct'] == 0.0
+    assert df.iloc[0]["species"] == "H"
+    assert abs(df.iloc[0]["rate"] - 5.2465e8) < 1e-3
+    assert df.iloc[0]["consumption_pct"] == 91.0
+    assert df.iloc[0]["production_pct"] == 0.0
+
 
 def test_empty_pathway_table():
-    block = '''
+    block = """
 |       Pathway                                     | Production of E           | Consumption of E          |
 +---------------------------------------------------+---------------------------+---------------------------+
 #############################################################################################################
-'''
+"""
     df = parse_all_species_pathway_tables_multiline(block)
     # Should be empty DataFrame or contain only NaNs
-    assert df.empty or all(np.isnan(df['rate']))
+    assert df.empty or all(np.isnan(df["rate"]))
+
 
 def test_complex_multistep_pathway_table():
-    block = '''
+    block = """
 |       Pathway                                     | Production of H           | Consumption of H          |
 +---------------------------------------------------+---------------------------+---------------------------+
 | 1 * (H2+O=>OH+H)            6.52246e+08 |                      62 % |                       0 % |
@@ -89,41 +99,44 @@ def test_complex_multistep_pathway_table():
 | 2 * (H+OH=>O+H2)                  21531 |                       0 % |                     1.6 % |
 +---------------------------------------------------+---------------------------+---------------------------+
 #############################################################################################################
-'''
+"""
     df = parse_all_species_pathway_tables_multiline(block)
     # It should parse all lines with a rate (multi-line support)
-    assert (df['rate'] > 0).sum() >= 6  # Should parse several rates > 0
-    assert "H" in df['species'].unique()
+    assert (df["rate"] > 0).sum() >= 6  # Should parse several rates > 0
+    assert "H" in df["species"].unique()
+
 
 def test_pathway_table_missing_columns():
-    block = '''
+    block = """
 | Pathway | Production of H | Consumption of H |
 +----+----+----+
 | nonsense line |
 +----+----+----+
 # End block
-'''
+"""
     df = parse_all_species_pathway_tables_multiline(block)
     # Should skip lines with missing/invalid columns
-    assert df.empty or all(df['pathway'].isna())
+    assert df.empty or all(df["pathway"].isna())
+
 
 def test_pathway_with_percent_symbols_and_weird_spacing():
-    block = '''
+    block = """
 | Pathway | Production of O | Consumption of O |
 +----+----+----+
 | 1 * (A=>B)     1234 |    33%    |   12 % |
 +----+----+----+
 # End block
-'''
+"""
     df = parse_all_species_pathway_tables_multiline(block)
-    assert df.iloc[0]['species'] == "O"
-    assert df.iloc[0]['production_pct'] == 33.0
-    assert df.iloc[0]['consumption_pct'] == 12.0
-    assert df.iloc[0]['rate'] == 1234
+    assert df.iloc[0]["species"] == "O"
+    assert df.iloc[0]["production_pct"] == 33.0
+    assert df.iloc[0]["consumption_pct"] == 12.0
+    assert df.iloc[0]["rate"] == 1234
+
 
 # This one uses the full realistic block you posted:
 def test_full_realistic_block():
-    block = '''
+    block = """
 |       Pathway                                     | Production of H           | Consumption of H          |
 +---------------------------------------------------+---------------------------+---------------------------+
 | 1 * (H2+OH=>H2O+H)              5.248e+08 |                      87 % |                       0 % |
@@ -137,12 +150,13 @@ def test_full_realistic_block():
 | 1 * (H2^++H2O=>H3O^++H)            2.52915e+07 |                     4.2 % |                       0 % |
 +---------------------------------------------------+---------------------------+---------------------------+
 #############################################################################################################
-'''
+"""
     df = parse_all_species_pathway_tables_multiline(block)
-    assert set(df['species']) == {"H"}
-    assert "(H2+OH=>H2O+H)" in set(df['pathway'])
-    assert np.isclose(df[df['pathway'] == '(H2+OH=>H2O+H)']['rate'].iloc[0], 5.248e8)
-    assert df[df['pathway'] == '(H+H2O=>OH+H2)']['consumption_pct'].iloc[0] == 91.0
+    assert set(df["species"]) == {"H"}
+    assert "(H2+OH=>H2O+H)" in set(df["pathway"])
+    assert np.isclose(df[df["pathway"] == "(H2+OH=>H2O+H)"]["rate"].iloc[0], 5.248e8)
+    assert df[df["pathway"] == "(H+H2O=>OH+H2)"]["consumption_pct"].iloc[0] == 91.0
+
 
 def test_load_all_cells_as_dict(tmp_path):
     # Write two cell files
@@ -157,12 +171,14 @@ def test_load_all_cells_as_dict(tmp_path):
         fname.write_text(cell_content)
     d = load_all_cells_as_dict(str(tmp_path))
     assert set(d.keys()) == {2, 4}
-    assert d[2].iloc[0]['species'] == "H"
-    assert d[2].iloc[0]['rate'] == 1234
+    assert d[2].iloc[0]["species"] == "H"
+    assert d[2].iloc[0]["rate"] == 1234
+
 
 def test_load_all_cells_empty_dir(tmp_path):
     d = load_all_cells_as_dict(str(tmp_path))
     assert d == {}
+
 
 def test_load_all_cells_missing_proper_filenames(tmp_path):
     # Put in a non-matching file
@@ -170,13 +186,16 @@ def test_load_all_cells_missing_proper_filenames(tmp_path):
     d = load_all_cells_as_dict(str(tmp_path))
     assert d == {}
 
+
 def test_compute_pathway_species_matrix_basic():
-    df = pd.DataFrame([
-        {"species": "H", "pathway": "(A=>B)", "rate": 10},
-        {"species": "O", "pathway": "(A=>B)", "rate": 10},
-        {"species": "O", "pathway": "(B=>C)", "rate": 5},
-        {"species": "H", "pathway": "(C=>D)", "rate": 3},
-    ])
+    df = pd.DataFrame(
+        [
+            {"species": "H", "pathway": "(A=>B)", "rate": 10},
+            {"species": "O", "pathway": "(A=>B)", "rate": 10},
+            {"species": "O", "pathway": "(B=>C)", "rate": 5},
+            {"species": "H", "pathway": "(C=>D)", "rate": 3},
+        ]
+    )
     data = {0: df}
     mtx = compute_pathway_species_matrix(data)
     assert set(mtx.index) == {"(A=>B)", "(B=>C)", "(C=>D)"}
@@ -186,6 +205,7 @@ def test_compute_pathway_species_matrix_basic():
     assert mtx.loc["(B=>C)", "O"] == 1
     assert mtx.loc["(C=>D)", "H"] == 1
     assert mtx.loc["(B=>C)", "H"] == 0
+
 
 def test_compute_pathway_species_matrix_empty():
     mtx = compute_pathway_species_matrix({})

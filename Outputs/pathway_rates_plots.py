@@ -4,6 +4,7 @@ import traceback
 import matplotlib.pyplot as plt
 from plot_styles import apply_plot_style, get_pathway_color
 
+
 def parse_multi_line_pathway_table(file_content):
     """
     Parses both single-line and multi-line pathway table formats.
@@ -82,7 +83,10 @@ def parse_multi_line_pathway_table(file_content):
                     rate = float(rate_match.group(2).strip())
                     pathway_dict[pathway] = rate
                 except ValueError:
-                    print(f"Warning: Failed to parse rate: {rate_match.group(2)} on line {i}")
+                    print(
+                        f"Warning: Failed to parse rate: "
+                        f"{rate_match.group(2)} on line {i}"
+                    )
                 buffer = []
             else:
                 if "|" in line:
@@ -92,6 +96,7 @@ def parse_multi_line_pathway_table(file_content):
 
     print(f"Parsed {len(pathway_dict)} pathways.")
     return pathway_dict
+
 
 def parse_single_line_pathway_table(file_content):
     """
@@ -135,7 +140,9 @@ def parse_single_line_pathway_table(file_content):
     past_header_separator = False
 
     header_content_pattern = re.compile(r"^\|.*Rate of pathway.*\|")
-    data_line_pattern = re.compile(r"\|\s*(.+?\s*\(\s*\d+\s*\)\s*)\s*\|\s*([-\deE\+\-\.]+)\s*\|")
+    data_line_pattern = re.compile(
+        r"\|\s*(.+?\s*\(\s*\d+\s*\)\s*)\s*\|\s*([-\deE\+\-\.]+)\s*\|"
+    )
     separator_pattern = re.compile(r"^\+[-+]+\+\s*$")
     end_marker_pattern = re.compile(r"^#+\s*$")
 
@@ -165,23 +172,32 @@ def parse_single_line_pathway_table(file_content):
                 print(f"--- Found data line at line {i} ---")
                 raw_pathway_part = data_match.group(1).strip()
                 rate_str = data_match.group(2).strip()
-                pathway_str = re.sub(r'\s*\(\s*\d+\s*\)\s*$', '', raw_pathway_part).strip()
+                pathway_str = re.sub(
+                    r"\s*\(\s*\d+\s*\)\s*$", "", raw_pathway_part
+                ).strip()
                 try:
                     rate = float(rate_str)
                     pathway_dict[pathway_str] = rate
                 except ValueError:
-                    print(f"Warning: Could not parse rate '{rate_str}' in line: {line.strip()}")
+                    print(
+                        f"Warning: Could not parse rate '{rate_str}' "
+                        f"in line: {line.strip()}"
+                    )
                     continue
 
-    print(f"--- Finished parse_single_line_pathway_table. Found {len(pathway_dict)} pathways. ---")
+    print(
+        f"--- Finished parse_single_line_pathway_table. "
+        f"Found {len(pathway_dict)} pathways. ---"
+    )
     return pathway_dict
+
 
 def main(
     data_dir="./",
     num_cells=233,
     use_multi_line_parser=True,
     top_n_pathways=25,
-    save_plot_path="./TotalPathwayRates.png"
+    save_plot_path="./TotalPathwayRates.png",
 ):
     """
     Main driver: parses all cell files, aggregates and plots pathway data.
@@ -225,7 +241,7 @@ def main(
     --- Finished parse_single_line_pathway_table. Found 1 pathways. ---
     Finished parsing 1 files.
     Found a total of 1 unique pathways.
-    Pathways found (sample): 
+    Pathways found (sample):
     - H2 + O2
     Plotting top pathways (log-log)...
     <BLANKLINE>
@@ -274,8 +290,7 @@ def main(
                 pathway_data[pathway_str][cell_i] = rate
 
     any_none = any(
-        any(val is None for val in rates_list)
-        for rates_list in pathway_data.values()
+        any(val is None for val in rates_list) for rates_list in pathway_data.values()
     )
     # print("Any None left after filling?", any_none)
 
@@ -290,47 +305,74 @@ def main(
     ranked_pathways = sorted(
         [(p, sum(rates)) for p, rates in pathway_data.items()],
         key=lambda x: x[1],
-        reverse=True
+        reverse=True,
     )
     top_pathways_to_plot = ranked_pathways[:top_n_pathways]
 
     print(f"\nTop {len(top_pathways_to_plot)} Pathways ranked by total rate:")
     for p_str, total_rate in top_pathways_to_plot:
         nonzero_count = sum(1 for r in pathway_data.get(p_str, []) if r > 0)
-        print(f"Pathway: {p_str[:80]}{'...' if len(p_str) > 80 else ''}, Total Rate: {total_rate:.2e}, Nonzero cells: {nonzero_count}")
+        print(
+            f"Pathway: {p_str[:80]}{'...' if len(p_str) > 80 else ''}, "
+            f"Total Rate: {total_rate:.2e}, Nonzero cells: {nonzero_count}"
+        )
 
     # Apply consistent styling
     apply_plot_style()
-    
+
     plt.figure(figsize=(16, 10))
-    
+
     # Use consistent colors for pathways
     colors = plt.cm.tab20(range(len(top_pathways_to_plot)))
-    
+
     for i, (p_str, _) in enumerate(top_pathways_to_plot):
         rates = pathway_data.get(p_str, [])
-        x_vals, y_vals = zip(*[(i, rate) for i, rate in enumerate(rates) if isinstance(rate, (int, float)) and rate > 0]) if rates else ([], [])
+        x_vals, y_vals = (
+            zip(
+                *[
+                    (i, rate)
+                    for i, rate in enumerate(rates)
+                    if isinstance(rate, (int, float)) and rate > 0
+                ]
+            )
+            if rates
+            else ([], [])
+        )
         if x_vals:
-            plt.plot(x_vals, y_vals, marker='o', linestyle='-', linewidth=2, 
-                    markersize=6, label=p_str, color=colors[i])
-    
-    plt.xscale('log')
-    plt.yscale('log')
+            plt.plot(
+                x_vals,
+                y_vals,
+                marker="o",
+                linestyle="-",
+                linewidth=2,
+                markersize=6,
+                label=p_str,
+                color=colors[i],
+            )
+
+    plt.xscale("log")
+    plt.yscale("log")
     plt.xlabel("Cell Number (log)")
     plt.ylabel("Pathway Rate (log)")
-    plt.title(f"Top {len(top_pathways_to_plot)} Pathway Rates vs Cell Number (Log-Log)", fontweight='bold')
-    plt.legend(title='Pathway', loc='upper left', bbox_to_anchor=(1.01, 1), fontsize=8)
+    plt.title(
+        f"Top {len(top_pathways_to_plot)} Pathway Rates vs Cell Number (Log-Log)",
+        fontweight="bold",
+    )
+    plt.legend(title="Pathway", loc="upper left", bbox_to_anchor=(1.01, 1), fontsize=8)
     plt.grid(True, alpha=0.3)
     plt.tight_layout(rect=[0, 0, 0.85, 1])
     if save_plot_path:
-        plt.savefig(save_plot_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_plot_path, dpi=300, bbox_inches="tight")
         print(f"Plot saved to {save_plot_path}")
     plt.show()
 
     # print("\nPlotting all pathways (non-ranked, log-log)...")
     # plt.figure(figsize=(16, 10))
     # for p_str, rates in pathway_data.items():
-    #     x_vals, y_vals = zip(*[(i, rate) for i, rate in enumerate(rates) if isinstance(rate, (int, float)) and rate > 0]) if rates else ([], [])
+    #     x_vals, y_vals = zip(*[
+    #         (i, rate) for i, rate in enumerate(rates) 
+    #         if isinstance(rate, (int, float)) and rate > 0
+    #     ]) if rates else ([], [])
     #     if x_vals:
     #         plt.plot(x_vals, y_vals, 'x', markersize=4, label=p_str)
     # plt.xscale('log')
@@ -345,8 +387,12 @@ def main(
         nonzero_count = sum(r > 0 for r in rates)
         valid_rates = [r for r in rates if isinstance(r, (int, float))]
         max_rate = max(valid_rates) if valid_rates else 0.0
-        print(f"Pathway: {p[:80]}{'...' if len(p) > 80 else ''}, Max rate: {max_rate:.2e}, Nonzero points: {nonzero_count}")
+        print(
+            f"Pathway: {p[:80]}{'...' if len(p) > 80 else ''}, "
+            f"Max rate: {max_rate:.2e}, Nonzero points: {nonzero_count}"
+        )
     # print(pathway_data.keys())
+
 
 if __name__ == "__main__":
     main()

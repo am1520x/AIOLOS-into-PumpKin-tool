@@ -1,5 +1,5 @@
 """
-Main script to process chemical reaction data from AIOLOS and generate inputs for PumpKin analysis.
+Main script to process chemical reaction data from AIOLOS and generate inputs \nfor PumpKin analysis.
 
 This script:
 - Extracts reactions from a log file
@@ -13,7 +13,8 @@ This script:
     - Reaction rate matrix (`qt_rates.txt`)
 
 Usage (via command line):
-    python main.py --logfile LOGFILE --chemfile CHEMFILE --sim SIM_NAME --directory DIR --timestep TIMESTEP
+    python main.py --logfile LOGFILE --chemfile CHEMFILE --sim SIM_NAME \\
+                   --directory DIR --timestep TIMESTEP
 
 Dependencies:
 - pandas
@@ -22,13 +23,14 @@ Dependencies:
 - Local modules: getting_reactions_from_log, processing_aiolos_reac_file,
                  making_densities_file, reading_rates_from_new_chem_files
 """
+
 import argparse
-import os
 import pandas as pd
 from getting_reactions_from_log import extract_all_reactions
-from processing_aiolos_reac_file import process_reaction_line, transform_species_set
+from processing_aiolos_reac_file import process_reaction_line
 from making_densities_file import process_radial_profile
 from reading_rates_from_new_chem_files import read_new_file, parse_reaction_column
+
 
 def main():
     """
@@ -58,12 +60,20 @@ def main():
         qt_conditions.txt      : Temperature profile (radial)
         qt_rates.txt           : Rate matrix by cell
     """
-    parser = argparse.ArgumentParser(description="Process chemistry and reaction data.")
-    parser.add_argument('--logfile', required=True, help="Path to the log file")
-    parser.add_argument('--chemfile', required=True, help="Path to the chemistry .dat file")
-    parser.add_argument('--sim', required=True, help="Simulation file base name (without extension)")
-    parser.add_argument('--directory', required=True, help="Directory containing the simulation files")
-    parser.add_argument('--timestep', type=int, required=True, help="Timestep value")
+    parser = argparse.ArgumentParser(
+        description="Process chemistry and reaction data."
+    )
+    parser.add_argument("--logfile", required=True, help="Path to the log file")
+    parser.add_argument(
+        "--chemfile", required=True, help="Path to the chemistry .dat file"
+    )
+    parser.add_argument(
+        "--sim", required=True, help="Simulation file base name (without extension)"
+    )
+    parser.add_argument(
+        "--directory", required=True, help="Directory containing the simulation files"
+    )
+    parser.add_argument("--timestep", type=int, required=True, help="Timestep value")
 
     args = parser.parse_args()
 
@@ -75,24 +85,35 @@ def main():
     print(rates_df.head())
 
     # Step 3: Melt the rates DataFrame
-    rates_df_melted = pd.melt(rates_df, id_vars=['cell_number', 'physical_radius'],
-                              var_name='reaction_number', value_name='rate')
-    rates_df_melted['reaction_number'] = rates_df_melted['reaction_number'].astype(int)
-    reactions_df['number'] = reactions_df['number'].astype(int)
+    rates_df_melted = pd.melt(
+        rates_df,
+        id_vars=["cell_number", "physical_radius"],
+        var_name="reaction_number",
+        value_name="rate",
+    )
+    rates_df_melted["reaction_number"] = rates_df_melted["reaction_number"].astype(int)
+    reactions_df["number"] = reactions_df["number"].astype(int)
 
     # Step 4: Merge to get reaction equations
-    merged_df = pd.merge(rates_df_melted, reactions_df, how='left',
-                         left_on='reaction_number', right_on='number')
-    merged_df = merged_df.drop(columns=['number'])
+    merged_df = pd.merge(
+        rates_df_melted,
+        reactions_df,
+        how="left",
+        left_on="reaction_number",
+        right_on="number",
+    )
+    merged_df = merged_df.drop(columns=["number"])
     print(merged_df)
 
     # Step 5: Process reactions
-    merged_df['processed_reaction'] = merged_df['reaction'].apply(process_reaction_line)
-    print(merged_df[['reaction', 'processed_reaction']].head())
+    merged_df["processed_reaction"] = merged_df["reaction"].apply(
+        process_reaction_line
+    )
+    print(merged_df[["reaction", "processed_reaction"]].head())
 
     # Only process cell 0
-    df = merged_df[merged_df['cell_number'] == 0.0]
-    stoich_list, species_list = parse_reaction_column(df['reaction'])
+    df = merged_df[merged_df["cell_number"] == 0.0]
+    stoich_list, species_list = parse_reaction_column(df["reaction"])
 
     # Write species list
     with open("qt_species_list.txt", "w") as f:
@@ -101,20 +122,26 @@ def main():
 
     # Write reactions
     with open("qt_reactions_list.txt", "w") as f:
-        for idx, reaction in enumerate(df['processed_reaction'], start=1):
+        for idx, reaction in enumerate(df["processed_reaction"], start=1):
             f.write(f"{idx} {reaction}\n")
 
     # Write stoichiometry matrix
     with open("qt_matrix.txt", "w") as f:
         for sp in species_list:
-            row = [str(int(coeff)) if isinstance(coeff, (int, float)) and coeff.is_integer() else str(coeff)
-                   for coeff in (r.get(sp, 0) for r in stoich_list)]
+            row = [
+                (
+                    str(int(coeff))
+                    if isinstance(coeff, (int, float)) and coeff.is_integer()
+                    else str(coeff)
+                )
+                for coeff in (r.get(sp, 0) for r in stoich_list)
+            ]
             f.write("\t".join(row) + "\n")
 
     print("Files generated: qt_species_list.txt, qt_reactions_list.txt, qt_matrix.txt")
 
     # Process for Aiolos
-    replacements = [('E', 'e-'), ('^+', 'p'), ('^-', '-')]
+    replacements = [("E", "e-"), ("^+", "p"), ("^-", "-")]
     aiolos_species = []
     for species in species_list:
         modified_species = species
@@ -125,14 +152,19 @@ def main():
     print(aiolos_species)
 
     # Radial profile processing
-    avg_T_list, radial_data = process_radial_profile(args.directory, args.sim, args.timestep, aiolos_species)
+    avg_T_list, radial_data = process_radial_profile(
+        args.directory, args.sim, args.timestep, aiolos_species
+    )
 
     # Pivot and save rate matrix
-    pivoted = merged_df.pivot(index='cell_number', columns='reaction_number', values='rate')
+    pivoted = merged_df.pivot(
+        index="cell_number", columns="reaction_number", values="rate"
+    )
     pivoted.reset_index(inplace=True)
-    pivoted.to_csv("qt_rates.txt", sep='\t', index=False)
+    pivoted.to_csv("qt_rates.txt", sep="\t", index=False)
 
     print("Generated qt_rates.txt")
+
 
 if __name__ == "__main__":
     main()

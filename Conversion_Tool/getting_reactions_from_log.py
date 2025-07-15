@@ -1,23 +1,30 @@
 """
 This script extracts chemical reaction information from the AIOLOS log file.
 
-It identifies and parses both thermochemical and photochemical reactions, returning them
+It identifies and parses both thermochemical and photochemical reactions, 
+returning them
 as a structured pandas DataFrame for further analysis or processing.
 
 Functions:
-- extract_reaction_blocks(content): Separates the thermochemical and photochemical blocks.
+- extract_reaction_blocks(content): Separates the thermochemical and 
+  photochemical blocks.
 - extract_reactions(block): Extracts individual reaction strings from a block.
-- extract_all_reactions(file_path): Processes a log file and returns a DataFrame of reactions.
+- extract_all_reactions(file_path): Processes a log file and returns a 
+  DataFrame of reactions.
 
 Example usage:
-    python getting_reactions_from_log.py  # Will print the first and last few parsed reactions from the given file.
+    python getting_reactions_from_log.py  # Will print the first and last 
+    # few parsed reactions from the given file.
 """
+
 import re
 import pandas as pd
 
+
 def extract_reaction_blocks(content):
     """
-    Extract thermochemical and photochemical reaction sections from the log file content.
+    Extract thermochemical and photochemical reaction sections from the log 
+    file content.
 
     Args:
         content (str): The full content of a chemistry log file.
@@ -38,16 +45,20 @@ def extract_reaction_blocks(content):
         True
     """
     thermo_block = re.search(
-        r"In init chemistry, reporting thermochemical reactions:(.*?)(?:Reporting photoreactions:|$)",
+        r"In init chemistry, reporting thermochemical reactions:"
+        r"(.*?)(?:Reporting photoreactions:|$)",
         content,
-        re.DOTALL
+        re.DOTALL,
     )
     photo_block = re.search(
         r"Reporting photoreactions:(.*?)(?:Photoreaction opacities table|$)",
         content,
-        re.DOTALL
+        re.DOTALL,
     )
-    return (thermo_block.group(1) if thermo_block else ""), (photo_block.group(1) if photo_block else "")
+    return (thermo_block.group(1) if thermo_block else ""), (
+        photo_block.group(1) if photo_block else ""
+    )
+
 
 def extract_reactions(block):
     """
@@ -60,14 +71,18 @@ def extract_reactions(block):
         list: A list of reaction strings.
 
     Example:
-        >>> extract_reactions("Reaction #1: A + B -> C ...\\nAvailable flux\\nReaction #2: X -> Y ...")
+        >>> extract_reactions(
+        ...     "Reaction #1: A + B -> C ...\\nAvailable flux\\n"
+        ...     "Reaction #2: X -> Y ..."
+        ... )
         ['Reaction #1: A + B -> C', 'Reaction #2: X -> Y']
     """
     return re.findall(
-        r"(Reaction\s+#\d+:\s+.+?->.+?)(?=\s+\.{2,}|Available flux|\ndG|\n|$)", 
+        r"(Reaction\s+#\d+:\s+.+?->.+?)(?=\s+\.{2,}|Available flux|\ndG|\n|$)",
         block,
-        re.DOTALL
+        re.DOTALL,
     )
+
 
 def extract_all_reactions(file_path):
     """
@@ -94,7 +109,7 @@ def extract_all_reactions(file_path):
         >>> df.iloc[0]['reaction']
         'H2 + O -> OH + H'
     """
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         content = f.read()
 
     thermo_block, photo_block = extract_reaction_blocks(content)
@@ -102,34 +117,38 @@ def extract_all_reactions(file_path):
     thermo_reactions = extract_reactions(thermo_block)
     photo_reactions = extract_reactions(photo_block)
 
-    reactions = {
-        "thermo": thermo_reactions,
-        "photo": photo_reactions
-    }
+    reactions = {"thermo": thermo_reactions, "photo": photo_reactions}
 
     data = []
-    
+
     for reac in reactions["thermo"]:
-        match = re.match(r'Reaction\s+#(\d+):\s+(.*)', reac)
+        match = re.match(r"Reaction\s+#(\d+):\s+(.*)", reac)
         if match:
             number = int(match.group(1))
             reaction = match.group(2)
-            data.append({'number': number, 'reaction': reaction})
+            data.append({"number": number, "reaction": reaction})
     for reac in reactions["photo"]:
-        match = re.match(r'Reaction\s+#(\d+):\s+(.*)', reac)
+        match = re.match(r"Reaction\s+#(\d+):\s+(.*)", reac)
         if match:
             number = int(match.group(1))
-            reaction = match.group(2).split(' + (')[0] + match.group(2).split(' + (')[1].split('eV ')[1].strip()
-            data.append({'number': number, 'reaction': reaction})
-        
+            reaction = (
+                match.group(2).split(" + (")[0]
+                + match.group(2).split(" + (")[1].split("eV ")[1].strip()
+            )
+            data.append({"number": number, "reaction": reaction})
+
     table = pd.DataFrame(data)
     return table
 
 
 # Example usage
 if __name__ == "__main__":
-    file_path = r"2025_waterworlds_cheminfo_h2-2\log_dynamic_h2-2-h2odom_frac-long153cut-step8-sol2eps-4-dist003-fullspectrum2-res35nocut-cheminfo.log"  # Replace with your file path
+    file_path = (
+        r"2025_waterworlds_cheminfo_h2-2\log_dynamic_h2-2-h2odom_frac-"
+        r"long153cut-step8-sol2eps-4-dist003-fullspectrum2-res35nocut-"
+        r"cheminfo.log"  # Replace with your file path
+    )
     reactions = extract_all_reactions(file_path)
-    
+
     print(reactions.head())
     print(reactions.tail())

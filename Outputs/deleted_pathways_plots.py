@@ -8,18 +8,24 @@ import traceback
 from glob import glob
 from collections import defaultdict
 from plot_styles import (
-    apply_plot_style, get_species_style, get_species_color, 
-    get_species_linestyle, format_species_name
+    apply_plot_style,
+    get_species_style,
+    get_species_color,
+    get_species_linestyle,
+    format_species_name,
 )
 
 DATA_DIR = ""  # path to directory containing all pumpkin_output_cell_*.txt files
 N_CELLS = 233
 
-deleted_contributions = defaultdict(lambda: {"production": [np.nan] * N_CELLS, "consumption": [np.nan] * N_CELLS})
+deleted_contributions = defaultdict(
+    lambda: {"production": [np.nan] * N_CELLS, "consumption": [np.nan] * N_CELLS}
+)
 dominant_pathways = defaultdict(list)
 flagged_entries = []
 
 species_list = []
+
 
 def parse_deleted_percent_block(lines, cell_number):
     """
@@ -28,7 +34,8 @@ def parse_deleted_percent_block(lines, cell_number):
     Parameters
     ----------
     lines : list of str
-        Table lines, each containing species name and percent deleted for production and consumption.
+        Table lines, each containing species name and percent deleted for 
+        production and consumption.
     cell_number : int
         Index of the current cell (0-based).
 
@@ -55,8 +62,8 @@ def parse_deleted_percent_block(lines, cell_number):
         match = re.match(pattern, line)
         if match:
             species = match.group(1).strip()
-            prod_str = match.group(2).strip().replace('%', '')
-            cons_str = match.group(3).strip().replace('%', '')
+            prod_str = match.group(2).strip().replace("%", "")
+            cons_str = match.group(3).strip().replace("%", "")
 
             try:
                 prod = float(prod_str)
@@ -70,17 +77,23 @@ def parse_deleted_percent_block(lines, cell_number):
             if species not in species_list:
                 species_list.append(species)
                 if len(deleted_contributions[species]["production"]) != N_CELLS:
-                     deleted_contributions[species]["production"] = [np.nan] * N_CELLS
+                    deleted_contributions[species]["production"] = [np.nan] * N_CELLS
                 if len(deleted_contributions[species]["consumption"]) != N_CELLS:
-                     deleted_contributions[species]["consumption"] = [np.nan] * N_CELLS
+                    deleted_contributions[species]["consumption"] = [np.nan] * N_CELLS
 
             if 0 <= cell_number < N_CELLS:
                 deleted_contributions[species]["production"][cell_number] = prod
                 deleted_contributions[species]["consumption"][cell_number] = cons
             else:
-                print(f"Warning: Cell number {cell_number} is outside the expected range [0, {N_CELLS-1}]. Data not stored.")
+                print(
+                    f"Warning: Cell number {cell_number} is outside the expected "
+                    f"range [0, {N_CELLS-1}]. Data not stored."
+                )
 
-            if (prod is not np.nan and prod > 10) or (cons is not np.nan and cons > 10):
+            if (
+                (prod is not np.nan and prod > 10) or 
+                (cons is not np.nan and cons > 10)
+            ):
                 flagged_entries.append((cell_number, species, prod, cons))
 
 
@@ -117,7 +130,7 @@ def parse_file(filepath, cell_number):
     True
     """
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             lines = f.readlines()
 
         header_idx = None
@@ -127,16 +140,21 @@ def parse_file(filepath, cell_number):
                 break
 
         if header_idx is None:
-            print(f"Section 'Procent of species from deleted pathways' not found in {filepath}. Skipping block parsing for this file.")
+            print(
+                f"Section 'Procent of species from deleted pathways' not found "
+                f"in {filepath}. Skipping block parsing for this file."
+            )
             return
 
         table_lines = []
         i = header_idx + 1
         sep_pattern = re.compile(r"^\+[-+]+\+\s*$")
-        data_pattern = re.compile(r"^\|\s*.+\s*\|\s*[-\deE.+nan% ]+\s*\|\s*[-\deE.+nan% ]+\s*\|")
+        data_pattern = re.compile(
+            r"^\|\s*.+\s*\|\s*[-\deE.+nan% ]+\s*\|\s*[-\deE.+nan% ]+\s*\|"
+        )
 
         while i < len(lines):
-            line = lines[i].rstrip('\n')
+            line = lines[i].rstrip("\n")
             if sep_pattern.match(line) or data_pattern.match(line):
                 table_lines.append(line)
                 i += 1
@@ -155,7 +173,8 @@ def parse_file(filepath, cell_number):
 
 def plot_deleted_contributions(save_path=None, show=True):
     """
-    Plot heatmaps of production/consumption % from deleted pathways for each species vs cell.
+    Plot heatmaps of production/consumption % from deleted pathways for each 
+    species vs cell.
 
     Side effects
     ------------
@@ -193,38 +212,52 @@ def plot_deleted_contributions(save_path=None, show=True):
 
     # Apply consistent styling
     apply_plot_style()
-    
+
     fig, axs = plt.subplots(2, 1, figsize=(16, 12), sharex=True)
     cell_labels = np.arange(N_CELLS)
-    
+
     # Format species names for y-axis
     formatted_species = [format_species_name(sp) for sp in species_order]
-    
-    sns.heatmap(prod_matrix, xticklabels=10, yticklabels=formatted_species, 
-                cmap="Reds", ax=axs[0], cbar_kws={'label': 'Production %'})
-    axs[0].set_title("Production % from Deleted Pathways", fontweight='bold')
+
+    sns.heatmap(
+        prod_matrix,
+        xticklabels=10,
+        yticklabels=formatted_species,
+        cmap="Reds",
+        ax=axs[0],
+        cbar_kws={"label": "Production %"},
+    )
+    axs[0].set_title("Production % from Deleted Pathways", fontweight="bold")
     axs[0].set_ylabel("Species")
     axs[0].set_xlim(0, N_CELLS)
-    
-    sns.heatmap(cons_matrix, xticklabels=10, yticklabels=formatted_species, 
-                cmap="Blues", ax=axs[1], cbar_kws={'label': 'Consumption %'})
-    axs[1].set_title("Consumption % from Deleted Pathways", fontweight='bold')
+
+    sns.heatmap(
+        cons_matrix,
+        xticklabels=10,
+        yticklabels=formatted_species,
+        cmap="Blues",
+        ax=axs[1],
+        cbar_kws={"label": "Consumption %"},
+    )
+    axs[1].set_title("Consumption % from Deleted Pathways", fontweight="bold")
     axs[1].set_xlabel("Radial Cell Index")
     axs[1].set_ylabel("Species")
     axs[1].set_xlim(0, N_CELLS)
     plt.tight_layout()
     if save_path is not None:
-        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
         print(f"Plot saved to {save_path}")
     if show:
         plt.show()
     else:
         plt.close()
 
+
 def main():
     """
     Main driver function. Parses all cell files and plots results.
-    Make sure you are in the directory folder of the data not this code, and run 'python Outputs/deleted_pathways_plots.py'.
+    Make sure you are in the directory folder of the data not this code, and 
+    run 'python Outputs/deleted_pathways_plots.py'.
 
     Returns
     -------
@@ -244,7 +277,10 @@ def main():
 
     print(f"\nFlagged Entries (Deleted Contribution > 10%):")
     for cell, species, prod, cons in flagged_entries:
-        print(f"Cell {cell:03d} | Species: {species} | Production: {prod:.2f}% | Consumption: {cons:.2f}%")
+        print(
+            f"Cell {cell:03d} | Species: {species} | "
+            f"Production: {prod:.2f}% | Consumption: {cons:.2f}%"
+        )
 
     print("\nGenerating plots...")
     if species_list:
@@ -252,6 +288,7 @@ def main():
         print("Plots generated and saved as 'deleted_contributions.png'.")
     else:
         print("No species data found to plot deleted contributions.")
+
 
 if __name__ == "__main__":
     main()

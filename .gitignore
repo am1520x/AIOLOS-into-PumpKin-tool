@@ -179,8 +179,4 @@ cython_debug/
 
 .claude/
 
-.plot_env\bin
-
-plot_env\bin\
-
 plot_env/

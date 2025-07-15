@@ -1,10 +1,14 @@
 import pytest, sys, os
 
-parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-from Outputs.pathway_rates_plots import parse_multi_line_pathway_table, parse_single_line_pathway_table
+from Outputs.pathway_rates_plots import (
+    parse_multi_line_pathway_table,
+    parse_single_line_pathway_table,
+)
+
 
 def test_parse_multi_line_pathway_table_basic():
     content = """
@@ -14,8 +18,9 @@ def test_parse_multi_line_pathway_table_basic():
 +----------------+-----------------+
 """
     d = parse_multi_line_pathway_table(content)
-    assert any('H2 + O2' in k for k in d)
+    assert any("H2 + O2" in k for k in d)
     assert abs(list(d.values())[0] - 1.2e-4) < 1e-8
+
 
 def test_parse_single_line_pathway_table_basic():
     content = """
@@ -31,6 +36,7 @@ def test_parse_single_line_pathway_table_basic():
     assert "CO + O2" in d
     assert abs(d["CO + O2"] - 3.1e-5) < 1e-8
 
+
 def test_parse_multi_line_pathway_table_malformed_line():
     content = """
 |   Reaction Step | Rate of pathway |
@@ -40,6 +46,7 @@ def test_parse_multi_line_pathway_table_malformed_line():
 """
     d = parse_multi_line_pathway_table(content)
     assert len(d) == 0  # Should skip line
+
 
 def test_parse_single_line_pathway_table_with_index_spaces():
     content = """
@@ -52,18 +59,20 @@ def test_parse_single_line_pathway_table_with_index_spaces():
     assert "H2 + O2" in d
     assert abs(d["H2 + O2"] - 0.99) < 1e-8
 
+
 def test_parse_multi_line_pathway_table_multistep():
-    content = '''
+    content = """
 | Step | Rate of pathway |
 +------+-----------------+
 | 1 * H2 + O2 (1) | 1.0e-02 |
 +------+-----------------+
 | CO2 + H2O (2)   | 5.0e-03 |
 +------+-----------------+
-'''
+"""
     d = parse_multi_line_pathway_table(content)
-    assert any('H2 + O2' in k for k in d)
+    assert any("H2 + O2" in k for k in d)
     assert abs(list(d.values())[0] - 1.0e-2) < 1e-8
+
 
 def test_parse_multi_line_pathway_table_complex_block():
     content = """
@@ -100,7 +109,7 @@ def test_parse_multi_line_pathway_table_complex_block():
         "(H+O2H=>O2+H2)": 3027.0,
         "(S1+H2O=>H2O^++H) -> (H+O^+=>O+S1)": 3025.98,
         "(OH=>O+H)": 2945.5,
-        "(S1+H2O=>H2O^++H) -> (H+H2^+=>H2+S1)": 2797.48
+        "(S1+H2O=>H2O^++H) -> (H+H2^+=>H2+S1)": 2797.48,
     }
 
     for k, v in expected.items():
@@ -109,4 +118,4 @@ def test_parse_multi_line_pathway_table_complex_block():
 
     # Check that no blank/empty rates have been added
     for k in result:
-        assert result[k] != '' and result[k] is not None
+        assert result[k] != "" and result[k] is not None

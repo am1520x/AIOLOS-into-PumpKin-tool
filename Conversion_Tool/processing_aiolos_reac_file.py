@@ -1,5 +1,5 @@
 """
-This script provides functions for parsing and transforming chemical reaction data from the AIOLOS simulation for feeding into the PumpKin analysis code.
+This script provides functions for parsing and transforming chemical reaction \ndata from the AIOLOS simulation for feeding into the PumpKin analysis code.
 
 The functions here:
 - Parse reaction lines from text into structured representations.
@@ -12,17 +12,19 @@ Functions:
 - transform_species_set: Standardizes species notation.
 - process_reaction_line: Converts a raw reaction line into a cleaned-up format.
 - process_side: Parses either side of a reaction and extracts stoichiometry.
-- parse_reaction_data: Parses full reaction data from annotated text into structured lists.
+- parse_reaction_data: Parses full reaction data from annotated text into \n  structured lists.
 """
+
 import re
+
 
 def transform_species_set(species_set):
     """
     Apply replacement rules to all species in the set.
-    
+
     Args:
         species_set (set): Original set of species names.
-        
+
     Returns:
         set: New set with transformed species names.
 
@@ -31,29 +33,30 @@ def transform_species_set(species_set):
         {'E', '^+', 'H2', 'CO', ''}
     """
     replacements = [
-        ('e-', 'E'),
-        ('p', '^+'),
-        ('->', '=>'),
-        ('M', 'ANY_NEUTRAL'),
-        (' ', ''),
-        ('eV', ''),
-        ('-', '^-')
+        ("e-", "E"),
+        ("p", "^+"),
+        ("->", "=>"),
+        ("M", "ANY_NEUTRAL"),
+        (" ", ""),
+        ("eV", ""),
+        ("-", "^-"),
     ]
-    
+
     transformed_set = set()
     for species in species_set:
         modified_species = species
         for old, new in replacements:
             modified_species = modified_species.replace(old, new)
         transformed_set.add(modified_species)
-    
+
     return transformed_set
+
 
 def process_reaction_line(line):
     """
     Process and standardize a single reaction line string.
 
-    Removes stoichiometric numbers and applies standardized replacements to make it like PumpKin inputs.
+    Removes stoichiometric numbers and applies standardized replacements to \n    make it like PumpKin inputs.
 
     Args:
         line (str): A raw reaction string (e.g., from a log or input file).
@@ -68,24 +71,25 @@ def process_reaction_line(line):
         'H^++O^-=>H2O'
     """
     # Remove stoichiometric numbers
-    modified = re.sub(r'\b[\d\.]+\s+', '', line)
-    
+    modified = re.sub(r"\b[\d\.]+\s+", "", line)
+
     # Replace various notations
     replacements = [
-        ('e-', 'E'),
-        ('p', '^+'),
-        ('->', '=>'),
-        ('M', 'ANY_NEUTRAL'),
-        ('+ eV', ''),
-        ('-', '^-')
+        ("e-", "E"),
+        ("p", "^+"),
+        ("->", "=>"),
+        ("M", "ANY_NEUTRAL"),
+        ("+ eV", ""),
+        ("-", "^-"),
     ]
     for old, new in replacements:
         modified = modified.replace(old, new)
-    
+
     # Fix ion notation
-    modified = re.sub(r'([A-Za-z0-9]+)([+-])', r'\1^\2', modified)
-    modified = modified.replace(' ', '')
+    modified = re.sub(r"([A-Za-z0-9]+)([+-])", r"\1^\2", modified)
+    modified = modified.replace(" ", "")
     return modified
+
 
 def process_side(side, multiplier, reaction_stoich, species_set):
     """
@@ -108,9 +112,9 @@ def process_side(side, multiplier, reaction_stoich, species_set):
         >>> stoich
         {'H2': -2.0, 'O2': -1.0}
     """
-    term_pattern = re.compile(r'([\d\.]+)\s*([A-Za-z0-9\-\+\(\)^`]+)')
-    terms = side.split('+')
-    
+    term_pattern = re.compile(r"([\d\.]+)\s*([A-Za-z0-9\-\+\(\)^`]+)")
+    terms = side.split("+")
+
     for term in terms:
         term = term.strip()
         match = term_pattern.match(term)
@@ -125,7 +129,8 @@ def process_side(side, multiplier, reaction_stoich, species_set):
             net_coeff = multiplier * coeff
             reaction_stoich[sp] = reaction_stoich.get(sp, 0) + net_coeff
             species_set.add(sp)
-    
+
+
 def parse_reaction_data(reac_text):
     """
     Parse reaction data from text and return reaction components.
@@ -134,7 +139,7 @@ def parse_reaction_data(reac_text):
 
     Args:
         reac_text (str): The input text containing reaction data
-        
+
     Returns:
         tuple: (reaction_list, stoich_list, species_list)
             - reaction_list: List of reaction equations
@@ -161,17 +166,16 @@ def parse_reaction_data(reac_text):
         line = line.strip()
         if not line or line.startswith("#"):
             continue
-            
+
         if line.startswith(("$", "%")):
-            reaction_type = line[0]
             clean_line = line[1:].strip()
             parts = clean_line.split("|")
             if not parts:
                 continue
 
             eq_str = parts[0].strip()
-            reaction_list.append(eq_str)  
-            
+            reaction_list.append(eq_str)
+
             # Process stoichiometry
             reaction_stoich = {}
             if "->" in eq_str:

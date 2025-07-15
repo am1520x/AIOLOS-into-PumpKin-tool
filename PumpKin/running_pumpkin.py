@@ -13,6 +13,7 @@ Note:
 - The path to the PumpKin executable and example directory must be correctly mapped to the WSL file system (/mnt/...).
 - Adjust the `command` and input range if your use case differs.
 """
+
 import subprocess
 
 # Full shell command to run in WSL
@@ -22,7 +23,9 @@ command = 'wsl bash -c "cd \\"/mnt/d/OneDrive/Water Worlds/PumpKin/src\\" && ./P
 input_data = "\n".join(str(i) for i in range(1, 27)) + "\n-1\n"
 
 # Run the command and pass input
-result = subprocess.run(command, input=input_data, capture_output=True, text=True, shell=True)
+result = subprocess.run(
+    command, input=input_data, capture_output=True, text=True, shell=True
+)
 
 # Save output to a .txt file
 with open("pumpkin_output.txt", "w") as f:
