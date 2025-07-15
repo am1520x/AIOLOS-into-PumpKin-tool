@@ -3,8 +3,10 @@
 main.py - Primary execution script for processing Aiolos reaction files and simulation data
 """
 
+import argparse
+import os
 from processing_aiolos_reac_file import parse_reaction_data, process_reaction_line, transform_species_set
-from making_densities_file import process_timesteps
+from making_densities_file import process_timesteps, process_radial_profile
 from making_rates_file import make_rates
 
 def process_reaction_files(input_file='steamfull_step3.reac'):
@@ -43,8 +45,14 @@ def process_reaction_files(input_file='steamfull_step3.reac'):
         print(f"Error processing reaction files: {str(e)}")
         return False
 
-def process_simulation_data():
-    """Process simulation timesteps and generate density/rate files"""
+def process_simulation_data(processing_type="timesteps", output_folder="Testing", timestep=None):
+    """Process simulation timesteps and generate density/rate files
+    
+    Args:
+        processing_type (str): Either "timesteps" or "radial_profile"
+        output_folder (str): Name of the output folder (default: "Testing")
+        timestep (int): Single timestep for radial profile processing
+    """
     species = [
         ["H", 1, 1, r"$\rm H$"],
         ["H-", 1, -1, r"$\rm H^-$"],
@@ -70,46 +78,93 @@ def process_simulation_data():
         ["e-", 5e-4, -1, r"$\rm e^-$"]
     ]
 
-    timesteps = range(10, 19, 1)
+    # Create output directory
+    output_dir = f"/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/{output_folder}"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Define output files with full paths
     output_files = {
-        'densities': "qt_densities.txt",
-        'rates': "qt_rates.txt"
+        'densities': os.path.join(output_dir, "qt_densities.txt"),
+        'rates': os.path.join(output_dir, "qt_rates.txt"),
+        'conditions': os.path.join(output_dir, "qt_conditions.txt")
     }
 
     try:
-        print("\nProcessing simulation data...")
-        avg_T, num_den = process_timesteps(
-            directory="../dynamic_cond0_data/",
-            sim="dynamic_ignoreleectrontest-cell200-newsol2-h2e+2-long-cond0",
-            timesteps=timesteps,
-            species=species,
-            rplanet=1.37e8,
-            index=10,
-            output_file=output_files['densities']
-        )
+        print(f"\nProcessing simulation data using {processing_type} method...")
+        
+        if processing_type == "timesteps":
+            timesteps = range(10, 19, 1)
+            avg_T, num_den = process_timesteps(
+                directory="../dynamic_cond0_data/",
+                sim="dynamic_ignoreleectrontest-cell200-newsol2-h2e+2-long-cond0",
+                timesteps=timesteps,
+                species=species,
+                rplanet=1.37e8,
+                index=10,
+                output_file=output_files['densities'],
+                output_file_2=output_files['conditions']
+            )
+        elif processing_type == "radial_profile":
+            if timestep is None:
+                timestep = 15  # Default timestep
+            timesteps = [timestep]
+            avg_T, num_den = process_radial_profile(
+                directory="../dynamic_cond0_data/",
+                sim="dynamic_ignoreleectrontest-cell200-newsol2-h2e+2-long-cond0",
+                timestep=timestep,
+                species=species,
+                rplanet=1.37e8,
+                output_file=output_files['densities'],
+                output_file_2=output_files['conditions']
+            )
+        else:
+            raise ValueError(f"Unknown processing type: {processing_type}")
+        
         make_rates(
             output_file=output_files['rates'],
             avg_T_at_index=avg_T,
             number_densities=num_den,
             timesteps=timesteps
         )
-        print(f"\nSuccessfully generated:\n- {output_files['densities']}\n- {output_files['rates']}\n- qt_conditions.txt")
+        print(f"\nSuccessfully generated files in {output_dir}:")
+        print(f"- {os.path.basename(output_files['densities'])}")
+        print(f"- {os.path.basename(output_files['rates'])}")
+        print(f"- {os.path.basename(output_files['conditions'])}")
         return True
 
     except Exception as e:
         print(f"Error processing simulation data: {str(e)}")
         return False
 
-if __name__ == "__main__":
-    print("=== Aiolos Data Processing Pipeline ===")
+def main():
+    """Main function with command-line interface"""
+    parser = argparse.ArgumentParser(description="Process Aiolos reaction files and simulation data")
+    parser.add_argument('--process-data', action='store_true', help='Process simulation data only')
+    parser.add_argument('--processing-type', choices=['timesteps', 'radial_profile'], default='timesteps',
+                        help='Type of processing: timesteps or radial_profile (default: timesteps)')
+    parser.add_argument('--output-folder', default='Testing', help='Output folder name (default: Testing)')
+    parser.add_argument('--timestep', type=int, help='Timestep for radial profile processing')
     
-    # Step 1: Process reaction files
-    if not process_reaction_files():
-        print("Warning: Reaction file processing failed, continuing with simulation data...")
+    args = parser.parse_args()
     
-    # Step 2: Process simulation data
-    if not process_simulation_data():
-        print("Error: Simulation data processing failed")
-        exit(1)
+    if args.process_data:
+        print("=== Processing Simulation Data Only ===")
+        if not process_simulation_data(args.processing_type, args.output_folder, args.timestep):
+            print("Error: Simulation data processing failed")
+            exit(1)
+    else:
+        print("=== Aiolos Data Processing Pipeline ===")
+        
+        # Step 1: Process reaction files
+        if not process_reaction_files():
+            print("Warning: Reaction file processing failed, continuing with simulation data...")
+        
+        # Step 2: Process simulation data
+        if not process_simulation_data(args.processing_type, args.output_folder, args.timestep):
+            print("Error: Simulation data processing failed")
+            exit(1)
     
     print("\nProcessing completed successfully!")
+
+if __name__ == "__main__":
+    main()
