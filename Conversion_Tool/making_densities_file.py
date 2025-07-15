@@ -36,8 +36,10 @@ def get_essential_data(directory, sim, timestep, species, rplanet=-1):
     """
     # Load first species to get dimensions
     first_species_name = species[0][0] if isinstance(species[0], list) else species[0]
+    first_file_path = f"{directory}output_{sim}_{first_species_name}_t{timestep}.dat"
+    
     data_h0 = np.genfromtxt(
-    f"{directory}output_{sim}_{first_species_name}_t{timestep}.dat",
+    first_file_path,
     skip_header=2,
     usecols=[0, 1, 2, 4, 10, 11, 12, 19],
     max_rows=410,
@@ -56,7 +58,6 @@ def get_essential_data(directory, sim, timestep, species, rplanet=-1):
     all_species_datas = []
     for s, spc in enumerate(species):
         species_name = spc[0] if isinstance(spc, list) else spc
-        print(f"Species {species_name}")
         file = f"{directory}output_{sim}_{species_name}_t{timestep}.dat"
         if os.path.isfile(file):
             tmpdata = np.genfromtxt(
