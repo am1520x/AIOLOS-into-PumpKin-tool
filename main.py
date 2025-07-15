@@ -420,7 +420,7 @@ For more information, see README.md
                        default='/mnt/d/OneDrive/Water Worlds/PumpKin/src',
                        help='Path to PumpKin directory')
     parser.add_argument('--pumpkin_in-dir', type=str, 
-                       default='/Examples/AIOLOS_NEW',
+                       default='/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_NEW',
                        help='Path to PumpKin example directory')
     parser.add_argument('--simulation-dir', type=str, default='../dynamic_cond0_data/',
                        help='Directory containing simulation data')
@@ -464,7 +464,7 @@ def main():
     
     # Set flags for --run-all
     if args.run_all:
-        args.process_data = True
+        args.process_data = False
         args.run_pumpkin = True
         args.generate_plots = True
     
