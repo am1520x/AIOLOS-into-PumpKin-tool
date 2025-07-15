@@ -135,6 +135,10 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.csh 
+.fish 
+.cfg
+.ps1 
 
 # Spyder project settings
 .spyderproject
@@ -172,3 +176,11 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+.claude/
+
+.plot_env\bin
+
+plot_env\bin\
+
+plot_env/
