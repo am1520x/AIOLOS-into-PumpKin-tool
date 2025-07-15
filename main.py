@@ -51,6 +51,13 @@ class AIOLOSPumpKinPipeline:
     def __init__(self, args):
         """Initialize pipeline with command-line arguments."""
         self.args = args
+        # Set default values for new arguments if not provided
+        if not hasattr(self.args, 'processing_type'):
+            self.args.processing_type = 'timesteps'
+        if not hasattr(self.args, 'output_folder'):
+            self.args.output_folder = 'Testing'
+        if not hasattr(self.args, 'timestep'):
+            self.args.timestep = 15
         self.setup_directories()
         self.validate_configuration()
     
@@ -144,7 +151,7 @@ class AIOLOSPumpKinPipeline:
     def _process_simulation_data(self):
         """Process simulation timesteps and generate density/rate files."""
         try:
-            from making_densities_file import process_timesteps
+            from making_densities_file import process_timesteps, process_radial_profile
             from making_rates_file import make_rates
             
             # Default species configuration (can be made configurable)
@@ -173,19 +180,43 @@ class AIOLOSPumpKinPipeline:
                 ["e-", 5e-4, -1, r"$\rm e^-$"]
             ]
             
-            timesteps = range(10, 19, 1)
-            densities_file = os.path.join(self.args.data_dir, self.args.densities_file)
-            rates_file = os.path.join(self.args.data_dir, self.args.rates_file)
+            # Create output folder
+            output_folder = getattr(self.args, 'output_folder', 'Testing')
+            output_dir = f"/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/{output_folder}"
+            os.makedirs(output_dir, exist_ok=True)
             
-            avg_T, num_den = process_timesteps(
-                directory=self.args.simulation_dir,
-                sim=self.args.simulation_name,
-                timesteps=timesteps,
-                species=species,
-                rplanet=1.37e8,
-                index=10,
-                output_file=densities_file
-            )
+            # Define output files with full paths
+            densities_file = os.path.join(output_dir, self.args.densities_file)
+            rates_file = os.path.join(output_dir, self.args.rates_file)
+            conditions_file = os.path.join(output_dir, "qt_conditions.txt")
+            
+            # Choose processing method
+            processing_type = getattr(self.args, 'processing_type', 'timesteps')
+            
+            if processing_type == 'radial_profile':
+                timestep = getattr(self.args, 'timestep', 15)
+                timesteps = [timestep]
+                avg_T, num_den = process_radial_profile(
+                    directory=self.args.simulation_dir,
+                    sim=self.args.simulation_name,
+                    timestep=timestep,
+                    species=species,
+                    rplanet=1.37e8,
+                    output_file=densities_file,
+                    output_file_2=conditions_file
+                )
+            else:
+                timesteps = range(10, 19, 1)
+                avg_T, num_den = process_timesteps(
+                    directory=self.args.simulation_dir,
+                    sim=self.args.simulation_name,
+                    timesteps=timesteps,
+                    species=species,
+                    rplanet=1.37e8,
+                    index=10,
+                    output_file=densities_file,
+                    output_file_2=conditions_file
+                )
             
             make_rates(
                 output_file=rates_file,
@@ -194,7 +225,10 @@ class AIOLOSPumpKinPipeline:
                 timesteps=timesteps
             )
             
-            print(f"Generated: {self.args.densities_file}, {self.args.rates_file}, qt_conditions.txt")
+            print(f"Generated files in {output_dir}:")
+            print(f"- {os.path.basename(densities_file)}")
+            print(f"- {os.path.basename(rates_file)}")
+            print(f"- qt_conditions.txt")
             return True
             
         except Exception as e:
@@ -435,6 +469,13 @@ For more information, see README.md
                        help='Species to analyze (default: H H2 O OH)')
     parser.add_argument('--top-n', type=int, default=5,
                        help='Number of top pathways to show in plots (default: 5)')
+    parser.add_argument('--processing-type', choices=['timesteps', 'radial_profile'], 
+                       default='timesteps',
+                       help='Type of processing: timesteps or radial_profile (default: timesteps)')
+    parser.add_argument('--output-folder', default='Testing',
+                       help='Output folder name in PumpKin/src/Examples/ (default: Testing)')
+    parser.add_argument('--timestep', type=int, 
+                       help='Timestep for radial profile processing (default: 15)')
     
     # File naming
     parser.add_argument('--output-prefix', type=str, default='pumpkin_output_cell',
