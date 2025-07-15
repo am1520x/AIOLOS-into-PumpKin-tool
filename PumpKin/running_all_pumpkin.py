@@ -2,18 +2,21 @@ import subprocess
 import re
 
 # Number of spatial cells
-num_cells = 233
+num_cells = 2 # 233
 
 # Path to WSL PumpKin directory and input.txt file
-pumpkin_dir = '/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_New'
+# pumpkin_dir = '/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_New'
+pumpkin_dir = '/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/Test_C'
+
 input_file_path = f'{pumpkin_dir}/input.txt'
 
 # Path to executable
 #command_base = f'"cd \\"/mnt/d/OneDrive/Water Worlds/PumpKin/src\\" && ./PumpKin Examples/AIOLOS_New/"'
-command = 'cd "/mnt/d/OneDrive/Water Worlds/PumpKin/src" && ./PumpKin Examples/AIOLOS_New/'
+# command = 'cd "/mnt/d/OneDrive/Water Worlds/PumpKin/src" && ./PumpKin Examples/AIOLOS_New/'
+command = 'cd "/mnt/d/OneDrive/Water Worlds/PumpKin/src" && ./PumpKin Examples/Test_C/'
 
-# Input species list (1 to 26) + end flag -1
-input_data = "\n".join(str(i) for i in range(1, 27)) + "\n-1\n"
+# Input species list (1 to 26) + end flag -1 range(1, 27)
+input_data = "\n".join(str(i) for i in range(1, 4)) + "\n-1\n"
 
 def modify_input_file(cell_index):
     """Updates t_init and t_end in input.txt for a given cell."""
@@ -48,7 +51,7 @@ for cell_index in range(num_cells):
     output_combined = result.stdout + "\n--- STDERR ---\n" + result.stderr
 
     # Step 3: Save unique output
-    output_filename = f"pumpkin_output_cell_{cell_index:03}.txt"
+    output_filename = f"Test_pumpkin_output_cell_{cell_index:03}.txt"
     with open(output_filename, "w") as f:
         f.write(output_combined)
 

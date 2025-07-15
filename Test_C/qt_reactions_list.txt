@@ -1,0 +1,4 @@
+1 H2+O=>OH+H
+2 H2=>H+H
+3 H+O=>OH
+4 OH=>sink
