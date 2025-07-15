@@ -208,7 +208,7 @@ class AIOLOSPumpKinPipeline:
         print("=" * 60)
         
         try:
-            input_file_path = os.path.join(self.args.pumpkin_dir, 'input.txt')
+            input_file_path = os.path.join(self.args.pumpkin_in_dir, 'input.txt')
             
             if not os.path.exists(input_file_path):
                 print(f"Error: PumpKin input file not found at {input_file_path}")
@@ -228,11 +228,12 @@ class AIOLOSPumpKinPipeline:
                     continue
                 
                 # Run PumpKin
-                command = f'cd "{os.path.dirname(self.args.pumpkin_dir)}" && ./PumpKin {os.path.basename(self.args.pumpkin_dir)}/'
+                command = f'cd "{os.path.abspath(self.args.pumpkin_dir)}" && ./PumpKin {os.path.join(os.path.basename(os.path.dirname(self.args.pumpkin_in_dir)), os.path.basename(self.args.pumpkin_in_dir))}/'
                 result = subprocess.run(command, input=input_data, capture_output=True, text=True, shell=True)
                 
                 if result.returncode != 0:
                     print(f"Warning: PumpKin returned error code {result.returncode} for cell {cell_index}")
+                    print(f"current directory: {os.path.abspath(self.args.pumpkin_dir)} command: {command}")
                 
                 # Save output
                 output_combined = result.stdout + "\n--- STDERR ---\n" + result.stderr
@@ -416,7 +417,10 @@ For more information, see README.md
     parser.add_argument('--output-dir', type=str, default='./results/',
                        help='Directory for analysis results (default: ./results/)')
     parser.add_argument('--pumpkin-dir', type=str, 
-                       default='/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_New',
+                       default='/mnt/d/OneDrive/Water Worlds/PumpKin/src',
+                       help='Path to PumpKin directory')
+    parser.add_argument('--pumpkin_in-dir', type=str, 
+                       default='/Examples/AIOLOS_NEW',
                        help='Path to PumpKin example directory')
     parser.add_argument('--simulation-dir', type=str, default='../dynamic_cond0_data/',
                        help='Directory containing simulation data')
