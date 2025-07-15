@@ -70,6 +70,8 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+docs/_static/
+docs/_templates/
 
 # PyBuilder
 .pybuilder/
@@ -180,3 +182,56 @@ cython_debug/
 .claude/
 
 plot_env/
+
+# Package-specific ignores
+# Build artifacts
+*.whl
+*.tar.gz
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Project-specific output files
+qt_*.txt
+pumpkin_output*.txt
+*.png
+*.pdf
+results/
+Testing/
+Test_*/
+
+# Data files that may be large or sensitive
+data/*.dat
+data/*.log
+simulation_data*/
+dynamic_*/
+output_dynamic*
+
+# PumpKin integration files
+pumpkin_*
+PumpKin/pumpkin_output*
+
+# Temporary and backup files
+*.bak
+*.backup
+*.tmp
+.temp/
+
+# Virtual environments specific to this project
+aiolos_env/
+pumpkin_env/
+analysis_env/

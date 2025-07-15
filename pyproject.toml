@@ -1,0 +1,123 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aiolos-pumpkin-tool"
+version = "1.0.0"
+description = "A comprehensive pipeline for converting AIOLOS simulation data into PumpKin analysis format"
+readme = "README.md"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Astrochemistry Team", email = "astrochemistry@example.com"}
+]
+keywords = [
+    "astrochemistry", 
+    "chemical-kinetics", 
+    "pathway-analysis", 
+    "simulation", 
+    "AIOLOS", 
+    "PumpKin"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "numpy>=1.20.0",
+    "pandas>=1.3.0",
+    "matplotlib>=3.5.0",
+    "seaborn>=0.11.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=22.0.0",
+    "flake8>=5.0.0",
+    "pylint>=2.15.0",
+]
+docs = [
+    "sphinx>=5.0.0",
+    "sphinx-rtd-theme>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/astrochemistry/aiolos-pumpkin-tool"
+Documentation = "https://aiolos-pumpkin-tool.readthedocs.io"
+Repository = "https://github.com/astrochemistry/aiolos-pumpkin-tool.git"
+Issues = "https://github.com/astrochemistry/aiolos-pumpkin-tool/issues"
+
+[project.scripts]
+aiolos-pumpkin = "aiolos_pumpkin_tool.cli:main"
+aiolos-convert = "aiolos_pumpkin_tool.cli:conversion_main"
+aiolos-plot = "aiolos_pumpkin_tool.cli:plotting_main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["aiolos_pumpkin_tool*"]
+
+[tool.setuptools.package-data]
+"aiolos_pumpkin_tool.data" = ["*.txt", "*.reac", "*.dat"]
+"aiolos_pumpkin_tool.pumpkin" = ["*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | docs/_build
+)/
+'''
+
+[tool.flake8]
+max-line-length = 88
+extend-ignore = "E203,W503"
+max-complexity = 10
+per-file-ignores = [
+    "__init__.py:F401",
+    "tests/*:S101",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+    "--cov=aiolos_pumpkin_tool",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
