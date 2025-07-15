@@ -18,21 +18,44 @@ def get_essential_data(directory, sim, timestep, species, rplanet=-1):
     """
     Load number density and temperature data for a set of species at a specific timestep.
 
+    This function reads AIOLOS simulation output files for specified species and 
+    extracts key data including number densities, temperatures, and radial coordinates.
+    It handles both individual species names and species data arrays.
+
     Args:
-        directory (str): Path to directory containing output files.
+        directory (str): Path to directory containing output files. Should end with '/'.
         sim (str): Simulation name prefix used in filenames.
         timestep (int): Simulation timestep number.
-        species (list): List of species names to load.
-        rplanet (float): Planet radius for normalizing radius column (default: -1 to auto-detect from file).
+        species (list): List of species names or species data arrays to load.
+            Each element can be either a string (species name) or a list where 
+            the first element [0] is the species name.
+        rplanet (float, optional): Planet radius in cm for normalizing radius column. 
+            If negative, auto-detects from the first data file. Defaults to -1.
 
     Returns:
-        tuple:
-            - avg_T (np.ndarray): Array of average temperatures at each radial bin.
-            - r (np.ndarray): Array of normalized radius values.
-            - all_species_datas (list): List of arrays, one per species, with extracted columns.
+        tuple: A 3-element tuple containing:
+            - avg_T (np.ndarray): Array of mass-weighted average temperatures at each radial bin (K).
+            - r (np.ndarray): Array of normalized radius values (dimensionless, r/rplanet).
+            - all_species_datas (list): List of numpy arrays, one per species, with shape (n_radial, 5).
+                Each array contains columns: [radius, ?, number_density, ?, temperature].
 
-    Example:
-        >>> avg_T, r, datas = get_essential_data("data/", "sim1", 10, ["H", "He"])
+    Raises:
+        FileNotFoundError: If the first species file cannot be found.
+        ValueError: If data files have inconsistent formats or invalid data.
+
+    Examples:
+        >>> # Load data for simple species list
+        >>> avg_T, r, datas = get_essential_data("../data/", "sim1", 10, ["H", "He"])
+        >>> len(datas)  # Should equal number of species
+        2
+        >>> avg_T.shape == r.shape  # Both arrays should have same length
+        True
+        
+        >>> # Load data with species data arrays (typical format from main pipeline)
+        >>> species_arrays = [["H", 1, 1, "$\\\\rm H$"], ["He", 4, 2, "$\\\\rm He$"]]
+        >>> avg_T, r, datas = get_essential_data("../data/", "sim1", 10, species_arrays)
+        >>> isinstance(avg_T, np.ndarray) and len(avg_T) > 0
+        True
     """
     # Load first species to get dimensions
     first_species_name = species[0][0] if isinstance(species[0], list) else species[0]
@@ -91,25 +114,46 @@ def get_essential_data(directory, sim, timestep, species, rplanet=-1):
 
 def process_timesteps(directory, sim, timesteps, species, rplanet=1.37e8, index=10, output_file="qt_densities.txt", output_file_2="qt_conditions.txt"):
     """
-    Process multiple timesteps and write number densities at a specific index to a file. Returns a nested dictionary with the data and list of average temperatures.
+    Process multiple timesteps and extract number densities at a specific radial location.
+    
+    This function processes a time series of AIOLOS simulation outputs, extracting 
+    number densities and temperatures at a fixed radial index across multiple timesteps.
+    Results are written to output files and returned as structured data.
     
     Args:
-        directory (str): Path to simulation output directory.
-        sim (str): Simulation name prefix.
-        timesteps (list[int]): List of timestep indices to process.
-        species (list[str]): List of species names.
-        rplanet (float): Planet radius in cm (default: 1.37e8 cm).
-        index (int): Radial index to extract (default: 10).
-        output_file (str): Filename for species densities output.
-        output_file_2 (str): Filename for temperature output.
+        directory (str): Path to simulation output directory. Should end with '/'.
+        sim (str): Simulation name prefix used in output filenames.
+        timesteps (list[int]): List of timestep indices to process sequentially.
+        species (list): List of species names or species data arrays.
+            Each element can be either a string or a list where [0] is the species name.
+        rplanet (float, optional): Planet radius in cm for normalization. Defaults to 1.37e8 cm.
+        index (int, optional): Radial bin index to extract data from. Defaults to 10.
+        output_file (str, optional): Output filename for species densities. Defaults to "qt_densities.txt".
+        output_file_2 (str, optional): Output filename for temperature data. Defaults to "qt_conditions.txt".
 
     Returns:
-        tuple:
-            - avg_T_list (list[float]): List of average temperatures at the specified radial index.
-            - data_dict (dict): Nested dictionary of number densities per timestep and species.
+        tuple: A 2-element tuple containing:
+            - avg_T_list (list[float]): Average temperatures at specified radial index for each timestep (K).
+            - data_dict (dict): Nested dictionary with structure {timestep: {species_name: number_density}}.
+                Failed timesteps will have NaN values for all species.
 
-    Example:
-        >>> process_timesteps("data/", "sim1", [0, 5, 10], ["H", "He"])
+    Raises:
+        IOError: If output files cannot be written.
+        Exception: Individual timestep failures are caught and logged, with NaN placeholders added.
+
+    Examples:
+        >>> # Process time evolution at radial index 10
+        >>> temps, data = process_timesteps("../data/", "sim1", [0, 5, 10, 15], ["H", "He"])
+        >>> len(temps) == 4  # Should match number of timesteps
+        True
+        >>> isinstance(data[0], dict)  # Each timestep should be a dictionary
+        True
+        >>> "H" in data[0]  # Species should be present in data
+        True
+        
+        >>> # Check data structure
+        >>> isinstance(data[0]["H"], (int, float))  # Number density should be numeric
+        True
     """
     
     avg_T_list = []
@@ -159,24 +203,51 @@ def process_timesteps(directory, sim, timesteps, species, rplanet=1.37e8, index=
 
 def process_radial_profile(directory, sim, timestep, species, rplanet=1.37e8, output_file="qt_densities.txt", output_file_2="qt_conditions.txt"):
     """
-    Processes and writes out full radial profiles of number densities and temperatures for all specified species at a single timestep.
+    Extract full radial profiles of number densities and temperatures at a single timestep.
+
+    This function processes a single timestep from AIOLOS simulation outputs to extract
+    the complete radial distribution of species number densities and temperatures across
+    all radial bins from the planet surface to the simulation boundary.
 
     Args:
-        directory (str): Path to simulation output directory.
-        sim (str): Simulation name prefix.
-        timestep (int): Timestep index to process.
-        species (list[str]): List of species names.
-        rplanet (float): Planet radius in cm (default: 1.37e8 cm).
-        output_file (str): Output file for number densities.
-        output_file_2 (str): Output file for temperatures.
+        directory (str): Path to simulation output directory. Should end with '/'.
+        sim (str): Simulation name prefix used in output filenames.
+        timestep (int): Specific timestep index to process.
+        species (list): List of species names or species data arrays.
+            Each element can be either a string or a list where [0] is the species name.
+        rplanet (float, optional): Planet radius in cm for normalization. Defaults to 1.37e8 cm.
+        output_file (str, optional): Output filename for radial number density profiles. 
+            Defaults to "qt_densities.txt".
+        output_file_2 (str, optional): Output filename for radial temperature profile. 
+            Defaults to "qt_conditions.txt".
 
     Returns:
-        tuple:
-            - avg_T_list (list[float]): Average temperatures at each radial bin.
-            - data_dict (dict): Nested dictionary {radius_index: {species: num_den}}.
+        tuple: A 2-element tuple containing:
+            - avg_T_list (list[float]): Average temperatures at each radial bin (K).
+                Length equals the number of radial bins in the simulation.
+            - data_dict (dict): Nested dictionary with structure {radius_index: {species_name: number_density}}.
+                Each radius_index corresponds to a radial bin from 0 (planet surface) to max_radius.
 
-    Example:
-        >>> process_radial_profile("data/", "sim1", 10, ["H", "He"])
+    Raises:
+        FileNotFoundError: If simulation output files for the specified timestep don't exist.
+        IOError: If output files cannot be written.
+        ValueError: If data files have inconsistent formats.
+
+    Examples:
+        >>> # Extract radial profile at timestep 85
+        >>> temps, data = process_radial_profile("../data/", "sim1", 85, ["H", "He", "H2"])
+        >>> len(temps) > 100  # Typical simulation has >100 radial bins
+        True
+        >>> len(data) == len(temps)  # Should have data for each radial bin
+        True
+        >>> isinstance(data[0]["H"], (int, float))  # Number densities should be numeric
+        True
+        
+        >>> # Check radial structure
+        >>> all(isinstance(idx, int) for idx in data.keys())  # Keys should be integer indices
+        True
+        >>> "H" in data[10] and "He" in data[10]  # All species should be present
+        True
     """
     avg_T_list = []
     data_dict = {}

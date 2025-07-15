@@ -228,3 +228,38 @@ This example demonstrates the complete workflow of the AIOLOS-into-PumpKin analy
   skipping the plotting functions but continuing with other parts of
   the pipeline. This way, you can still run PumpKin analysis even
   without plotting capabilities.
+
+
+Based on my analysis of the PumpKin codebase, here's what f_min represents and how flux is calculated and used:
+
+  f_min (Pathway Rate Threshold)
+
+  f_min is a computational efficiency parameter that acts as a pathway rate threshold with units of mol cm⁻³ s⁻¹. When f_min > 0, pathways with rates
+  below this threshold are deleted from the analysis to reduce computational complexity.
+
+  Flux Calculation
+
+  The "flux" in PumpKin is the pathway rate (f_k), calculated as:
+
+  1. Elementary pathways: f_k = reaction rate directly
+  2. Merged pathways: f_k = (pathway1_rate × pathway2_rate) / branching_point_auxiliary_variable
+  3. Factorized pathways: f_k is scaled by the greatest common divisor of reaction multiplicities
+
+  Pathway Deletion Process
+
+  In pk_Pathways.cpp:712, the deletion logic is:
+
+  if ((f_min > 0) && (PATHS[i].f_k < f_min)) {
+      PATHS[i].deleted = true;
+      Update_deleted(PATHS[i], rates, PATHS[i].f_k);
+  }
+
+  When pathways are deleted:
+  - Their contribution is tracked in "tilda" variables for proper mass balance
+  - Deleted reaction rates and species production/destruction rates are accounted for
+  - The pathway is marked as deleted but its effects remain in the overall system accounting
+
+  This allows PumpKin to maintain chemical accuracy while improving computational efficiency by filtering out insignificant pathways.
+
+
+Need to ask what the flux represents and if its valid to delete ones with low. 
