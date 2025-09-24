@@ -365,7 +365,7 @@ class AIOLOSPumpKinPipeline:
         try:
             # Import plotting main
             plotting_script = os.path.join(
-                os.path.dirname(__file__), "Outputs", "plotting_main.py"
+                os.path.dirname(__file__), "outputs", "plotting_main.py"
             )
 
             if not os.path.exists(plotting_script):
