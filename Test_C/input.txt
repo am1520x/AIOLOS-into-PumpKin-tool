@@ -1,1 +1,0 @@
-interest = 4 t_init = 0 t_end = 1 max_bp = 0 tau_lifetime = 0 max_path = 50 f_min = 0 global_kin = 1
