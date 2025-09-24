@@ -42,7 +42,10 @@ import traceback
 
 # Package imports
 from .utils import setup_pumpkin_environment, validate_dependencies, get_package_data_path
-
+# Import conversion helpers (package relative)
+from .conversion_tool.getting_reactions_from_log import extract_all_reactions
+from .conversion_tool.reading_rates_from_new_chem_files import read_new_file, parse_reaction_column
+from .conversion_tool import main_command as conv_main
 
 class AIOLOSPumpKinPipeline:
     """Main pipeline class for AIOLOS to PumpKin analysis."""
@@ -74,41 +77,154 @@ class AIOLOSPumpKinPipeline:
             raise ValueError("Number of cells must be positive")
 
     def process_aiolos_data(self):
-        """Process AIOLOS reaction files and simulation data."""
+        # """Process AIOLOS reaction files and simulation data."""
+        # print("=" * 60)
+        # print("STEP 1: Processing AIOLOS Data")
+        # print("=" * 60)
+
+        # try:
+        #     # Import conversion tools
+        #     from .conversion_tool.processing_aiolos_reac_file import (
+        #         parse_reaction_data,
+        #         process_reaction_line,
+        #         transform_species_set,
+        #     )
+        #     from .conversion_tool.making_densities_file import process_timesteps
+        #     from .conversion_tool.making_rates_file import make_rates
+
+        #     # Process reaction files
+        #     print("Processing reaction files...")
+        #     if not self._process_reaction_files():
+        #         print("Warning: Reaction file processing failed")
+        #         return False
+
+        #     # Process simulation data
+        #     print("Processing simulation data...")
+        #     if not self._process_simulation_data():
+        #         print("Error: Simulation data processing failed")
+        #         return False
+
+        #     print("SUCCESS: AIOLOS data processing completed successfully")
+        #     return True
+
+        # except ImportError as e:
+        #     print(f"Error: Missing conversion tools - {e}")
+        #     return False
+        # except Exception as e:
+        #     print(f"Error in AIOLOS data processing: {e}")
+        #     traceback.print_exc()
+        #     return False
+        """Process AIOLOS reaction files and simulation data using conversion_tool logic."""
+        import pandas as pd
         print("=" * 60)
-        print("STEP 1: Processing AIOLOS Data")
+        print("STEP 1: Processing AIOLOS Data (conversion_tool style)")
         print("=" * 60)
 
         try:
-            # Import conversion tools
-            from .conversion_tool.processing_aiolos_reac_file import (
-                parse_reaction_data,
-                process_reaction_line,
-                transform_species_set,
+            # import the helpers used by conversion_tool/main_command
+            from .conversion_tool.getting_reactions_from_log import extract_all_reactions
+            from .conversion_tool.reading_rates_from_new_chem_files import read_new_file, parse_reaction_column
+            from .conversion_tool.processing_aiolos_reac_file import process_reaction_line
+            from .conversion_tool.making_densities_file import process_radial_profile
+
+            # Resolve file paths (use args on pipeline)
+            logfile = getattr(self.args, "logfile", None) or "log.txt"
+            chemfile = getattr(self.args, "chemfile", None) or "chemistry.dat"
+            # data_dir is where we write PumpKin inputs
+            out_data_dir = self.args.data_dir
+            os.makedirs(out_data_dir, exist_ok=True)
+
+            # Step 1: extract reactions from the AIOLOS log
+            reactions_df = extract_all_reactions(logfile)
+            # Step 2: read chemistry rates table
+            rates_df = read_new_file(chemfile)
+
+            # Step 3: melt to long form and merge with reaction strings
+            rates_df_melt = pd.melt(
+                rates_df,
+                id_vars=["cell_number", "physical_radius"],
+                var_name="reaction_number",
+                value_name="rate",
             )
-            from .conversion_tool.making_densities_file import process_timesteps
-            from .conversion_tool.making_rates_file import make_rates
+            rates_df_melt["reaction_number"] = rates_df_melt["reaction_number"].astype(int)
+            reactions_df["number"] = reactions_df["number"].astype(int)
 
-            # Process reaction files
-            print("Processing reaction files...")
-            if not self._process_reaction_files():
-                print("Warning: Reaction file processing failed")
-                return False
+            merged = pd.merge(
+                rates_df_melt,
+                reactions_df,
+                how="left",
+                left_on="reaction_number",
+                right_on="number",
+            ).drop(columns=["number"])
 
-            # Process simulation data
-            print("Processing simulation data...")
-            if not self._process_simulation_data():
-                print("Error: Simulation data processing failed")
-                return False
+            # Step 4: process reaction strings for PumpKin formatting
+            merged["processed_reaction"] = merged["reaction"].apply(process_reaction_line)
 
-            print("SUCCESS: AIOLOS data processing completed successfully")
+            # Step 5: use cell 0 (as conversion_tool does) to derive stoichiometry/species
+            df0 = merged[merged["cell_number"] == 0.0]
+            stoich_list, species_list = parse_reaction_column(df0["reaction"])
+
+            # Write species list
+            species_path = os.path.join(out_data_dir, self.args.species_file)
+            with open(species_path, "w") as fh:
+                for i, sp in enumerate(species_list, start=1):
+                    fh.write(f"{i} {sp}\n")
+
+            # Write reactions list (processed)
+            reactions_path = os.path.join(out_data_dir, self.args.reactions_file)
+            with open(reactions_path, "w") as fh:
+                for idx, reaction in enumerate(df0["processed_reaction"], start=1):
+                    fh.write(f"{idx} {reaction}\n")
+
+            # Write stoichiometry matrix
+            matrix_path = os.path.join(out_data_dir, "qt_matrix.txt")
+            with open(matrix_path, "w") as fh:
+                for sp in species_list:
+                    row = [
+                        (
+                            str(int(coeff))
+                            if isinstance(coeff, (int, float)) and float(coeff).is_integer()
+                            else str(coeff)
+                        )
+                        for coeff in (r.get(sp, 0) for r in stoich_list)
+                    ]
+                    fh.write("\t".join(row) + "\n")
+
+            print(f"Generated: {os.path.basename(species_path)}, {os.path.basename(reactions_path)}, qt_matrix.txt")
+
+            # Prepare Aiolos-style species names and run radial profile to get densities/temps
+            replacements = [("E", "e-"), ("^+", "p"), ("^-", "-")]
+            aiolos_species = []
+            for species in species_list:
+                modified = species
+                for old, new in replacements:
+                    modified = modified.replace(old, new)
+                aiolos_species.append(modified)
+
+            # process radial profile (writes qt_densities/qt_conditions if implemented)
+            sim_dir = getattr(self.args, "simulation_dir", None)
+            sim_name = getattr(self.args, "simulation_name", None)
+            timestep = getattr(self.args, "timestep", None)
+            if sim_dir and sim_name and timestep is not None:
+                avg_T_list, radial_data = process_radial_profile(sim_dir, sim_name, timestep, aiolos_species)
+                # write qt_rates pivoted per cell into data_dir
+                pivoted = merged.pivot(index="cell_number", columns="reaction_number", values="rate")
+                pivoted.reset_index(inplace=True)
+                rates_out = os.path.join(out_data_dir, self.args.rates_file)
+                pivoted.to_csv(rates_out, sep="\t", index=False)
+                print(f"Generated {os.path.basename(rates_out)}")
+            else:
+                # still write rates pivot even if no radial profile was produced
+                pivoted = merged.pivot(index="cell_number", columns="reaction_number", values="rate")
+                pivoted.reset_index(inplace=True)
+                rates_out = os.path.join(out_data_dir, self.args.rates_file)
+                pivoted.to_csv(rates_out, sep="\t", index=False)
+                print(f"Generated {os.path.basename(rates_out)} (radial profile skipped)")
+
             return True
 
-        except ImportError as e:
-            print(f"Error: Missing conversion tools - {e}")
-            return False
-        except Exception as e:
-            print(f"Error in AIOLOS data processing: {e}")
+        except Exception as exc:
+            print(f"Error processing AIOLOS data (conversion flow): {exc}")
             traceback.print_exc()
             return False
 
@@ -636,6 +752,19 @@ For more information, see README.md
         type=str,
         default="steamfull_step3.reac",
         help="Input reaction file (default: steamfull_step3.reac)",
+    )
+    # Add conversion-tool style inputs for direct AIOLOS outputs
+    parser.add_argument(
+        "--logfile",
+        type=str,
+        default="log.txt",
+        help="AIOLOS log file containing 'Reaction #N:' lines (used by --process-data)",
+    )
+    parser.add_argument(
+        "--chemfile",
+        type=str,
+        default="chemistry.dat",
+        help="AIOLOS chemistry_*.dat file with per-cell reaction columns (used by --process-data)",
     )
 
     return parser

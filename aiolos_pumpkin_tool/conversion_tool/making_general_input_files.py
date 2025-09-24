@@ -93,3 +93,44 @@ make_rates(
     number_densities=number_densities,
     timesteps=timesteps,
 )
+
+if __name__ == "__main__":
+    import argparse
+    import os
+
+    parser = argparse.ArgumentParser(
+        description="Process chemistry and log files to extract reactions and rates."
+    )
+    parser.add_argument(
+        "--rates-file",
+        type=str,
+        required=True,
+        help="Path to the chemistry rates file (e.g., chemistry_....dat)",
+    )
+    parser.add_argument(
+        "--reactions-file",
+        type=str,
+        required=True,
+        help="Path to the log file containing reactions (e.g., log_dynamic_....log)",
+    )
+    parser.add_argument(
+        "--outdir",
+        type=str,
+        default="output",
+        help="Output directory to save processed files",
+    )
+    parser.add_argument(
+        "--write-long",
+        action="store_true",
+        help="Whether to write long format rates file",
+    )
+
+    args = parser.parse_args()
+
+    os.makedirs(args.outdir, exist_ok=True)
+
+    from .getting_reactions_from_log import extract_all_reactions, write_rates_outputs, maybe_write_densities
+
+    reactions_df = extract_all_reactions(args.reactions_file)
+    write_rates_outputs(args.rates_file, reactions_df, args.outdir, args.write_long)
+    maybe_write_densities(args, args.outdir)
