@@ -219,7 +219,42 @@ class AIOLOSPumpKinPipeline:
                 pivoted.reset_index(inplace=True)
                 rates_out = os.path.join(out_data_dir, self.args.rates_file)
                 pivoted.to_csv(rates_out, sep="\t", index=False)
-                print(f"Generated {os.path.basename(rates_out)} (radial profile skipped)")
+                print(f"Generated: {os.path.basename(rates_out)} (radial profile skipped)")
+
+                        # ---- ensure densities/conditions are created (call legacy helper) ----
+            try:
+                # Try to create densities/conditions via the existing helper
+                # This uses your existing _process_simulation_data function which writes
+                # to the PumpKin Examples/<output_folder> path.
+                print("Attempting to create qt_densities/qt_conditions via _process_simulation_data()...")
+                # call the helper that writes densities & conditions
+                if self._process_simulation_data():
+                    # copy results back into args.data_dir so all data is together
+                    src_dir = os.path.join(
+                        "/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples",
+                        getattr(self.args, "output_folder", "Testing"),
+                    )
+                    src_dens = os.path.join(src_dir, "qt_densities.txt")
+                    src_cond = os.path.join(src_dir, "qt_conditions.txt")
+                    dst_dens = os.path.join(out_data_dir, "qt_densities.txt")
+                    dst_cond = os.path.join(out_data_dir, "qt_conditions.txt")
+                    # copy if files exist
+                    if os.path.exists(src_dens):
+                        import shutil
+                        shutil.copy(src_dens, dst_dens)
+                        print(f"Copied {src_dens} -> {dst_dens}")
+                    else:
+                        print(f"Notice: densities file not found at {src_dens}")
+                    if os.path.exists(src_cond):
+                        import shutil
+                        shutil.copy(src_cond, dst_cond)
+                        print(f"Copied {src_cond} -> {dst_cond}")
+                    else:
+                        print(f"Notice: conditions file not found at {src_cond}")
+                else:
+                    print("Notice: _process_simulation_data() failed or produced no files")
+            except Exception as _exc:
+                print(f"Non-fatal: could not create/copy densities/conditions: {_exc}")
 
             return True
 
@@ -324,7 +359,7 @@ class AIOLOSPumpKinPipeline:
             os.makedirs(output_dir, exist_ok=True)
 
             # Define output files with full paths
-            densities_file = os.path.join(output_dir, self.args.densities_file)
+            densities_file = os.path.join(output_dir, "qt_densities.txt")
             rates_file = os.path.join(output_dir, self.args.rates_file)
             conditions_file = os.path.join(output_dir, "qt_conditions.txt")
 
@@ -787,7 +822,7 @@ def main():
 
     # Set flags for --run-all
     if args.run_all:
-        args.process_data = False
+        args.process_data = True
         args.run_pumpkin = True
         args.generate_plots = True
 
