@@ -190,7 +190,7 @@ class AIOLOSPumpKinPipeline:
                     ]
                     fh.write("\t".join(row) + "\n")
 
-            print(f"Generated: {os.path.basename(species_path)}, {os.path.basename(reactions_path)}, qt_matrix.txt")
+            print(f"Generated: {os.path.basename(species_path)}, {os.path.basename(reactions_path)}, qt_matrix.txt in {out_data_dir}")
 
             # Prepare Aiolos-style species names and run radial profile to get densities/temps
             replacements = [("E", "e-"), ("^+", "p"), ("^-", "-")]
@@ -239,18 +239,18 @@ class AIOLOSPumpKinPipeline:
                     dst_dens = os.path.join(out_data_dir, "qt_densities.txt")
                     dst_cond = os.path.join(out_data_dir, "qt_conditions.txt")
                     # copy if files exist
-                    if os.path.exists(src_dens):
-                        import shutil
-                        shutil.copy(src_dens, dst_dens)
-                        print(f"Copied {src_dens} -> {dst_dens}")
-                    else:
-                        print(f"Notice: densities file not found at {src_dens}")
-                    if os.path.exists(src_cond):
-                        import shutil
-                        shutil.copy(src_cond, dst_cond)
-                        print(f"Copied {src_cond} -> {dst_cond}")
-                    else:
-                        print(f"Notice: conditions file not found at {src_cond}")
+                    # if os.path.exists(src_dens):
+                    #     import shutil
+                    #     shutil.copy(src_dens, dst_dens)
+                    #     print(f"Copied {src_dens} -> {dst_dens}")
+                    # else:
+                    #     print(f"Notice: densities file not found at {src_dens}")
+                    # if os.path.exists(src_cond):
+                    #     import shutil
+                    #     shutil.copy(src_cond, dst_cond)
+                    #     print(f"Copied {src_cond} -> {dst_cond}")
+                    # else:
+                    #     print(f"Notice: conditions file not found at {src_cond}")
                 else:
                     print("Notice: _process_simulation_data() failed or produced no files")
             except Exception as _exc:
@@ -391,16 +391,16 @@ class AIOLOSPumpKinPipeline:
                     output_file_2=conditions_file,
                 )
 
-            make_rates(
-                output_file=rates_file,
-                avg_T_at_index=avg_T,
-                number_densities=num_den,
-                timesteps=timesteps,
-            )
+            # make_rates(
+            #     output_file=rates_file,
+            #     avg_T_at_index=avg_T,
+            #     number_densities=num_den,
+            #     timesteps=timesteps,
+            # )
 
             print(f"Generated files in {output_dir}:")
             print(f"- {os.path.basename(densities_file)}")
-            print(f"- {os.path.basename(rates_file)}")
+            # print(f"- {os.path.basename(rates_file)}")
             print(f"- qt_conditions.txt")
             return True
 
@@ -454,6 +454,7 @@ class AIOLOSPumpKinPipeline:
                     print(
                         f"Warning: PumpKin returned error code {result.returncode} "
                         f"for cell {cell_index}"
+                        # f"error {result.stderr}"
                     )
                     print(
                         f"current directory: {os.path.abspath(self.args.pumpkin_dir)} "
