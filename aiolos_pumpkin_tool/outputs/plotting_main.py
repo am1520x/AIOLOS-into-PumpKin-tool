@@ -87,9 +87,9 @@ def run_species_plots(args):
     print(f"Running species-specific plots for {len(args.species)} species...")
 
     # Load cell data
-    cell_dict = load_all_cells_as_dict(args.data_dir, args.file_pattern)
+    cell_dict = load_all_cells_as_dict(args.pumpkin_data_dir, args.file_pattern)
     if not cell_dict:
-        print(f"No cell data found in {args.data_dir} with pattern {args.file_pattern}")
+        print(f"No cell data found in {args.pumpkin_data_dir} with pattern {args.file_pattern}")
         return False
 
     print(f"Loaded data for {len(cell_dict)} cells")
@@ -171,7 +171,7 @@ def run_pathway_rates_plots(args):
 
     try:
         pathway_rates_main(
-            data_dir=args.data_dir,
+            data_dir=args.pumpkin_data_dir,
             num_cells=args.num_cells,
             use_multi_line_parser=args.use_multi_line_parser,
             top_n_pathways=args.top_n_pathways,
@@ -219,7 +219,7 @@ def run_deleted_pathways_plots(args):
         # Set global variables for deleted pathways module
         import deleted_pathways_plots
 
-        deleted_pathways_plots.DATA_DIR = args.data_dir
+        deleted_pathways_plots.DATA_DIR = args.pumpkin_data_dir
         deleted_pathways_plots.N_CELLS = args.num_cells
 
         deleted_pathways_main()
@@ -266,7 +266,7 @@ Examples:
   python plotting_main.py --all
 
   # Run only species plots for specific species
-  python plotting_main.py --species-plots --species H H2 O OH --data-dir ./
+  python plotting_main.py --species-plots --species H H2 O OH --pumpkin-data-dir ./
 
   # Run pathway rates plots with custom settings
   python plotting_main.py --pathway-rates --num-cells 100 --top-n-pathways 15
@@ -306,7 +306,7 @@ Examples:
 
     # Common parameters
     parser.add_argument(
-        "--data-dir",
+        "--pumpkin-data-dir",
         type=str,
         default="./",
         help="Directory containing data files (default: ./)",

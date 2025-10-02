@@ -229,6 +229,9 @@ def plot_top_species_pathways_by_rate(
 
     for idx, cell in enumerate(cell_numbers):
         df = cell_data_dict[cell]
+        if "species" not in df.columns:
+            print(f"Skipping cell {cell}: missing 'species' column")
+            continue
         df_species = df[df["species"] == species_name]
 
         for _, row in df_species.iterrows():
@@ -323,6 +326,9 @@ def plot_species_net_rate(cell_data_dict, species_name, save_path=None):
 
     for cell in cell_numbers:
         df = cell_data_dict[cell]
+        if "species" not in df.columns:
+            print(f"Skipping cell {cell}: missing 'species' column")
+            continue
         df_species = df[df["species"] == species_name]
         prod_total = df_species.loc[
             df_species["production_pct"] > df_species["consumption_pct"], "rate"
@@ -337,7 +343,8 @@ def plot_species_net_rate(cell_data_dict, species_name, save_path=None):
     apply_plot_style()
     species_style = get_species_style(species_name)
     formatted_species = format_species_name(species_name)
-
+    if len(cell_numbers) != len(net_rates):
+        return
     plt.figure(figsize=(10, 6))
     plt.plot(
         cell_numbers,
@@ -380,6 +387,9 @@ def plot_pathway_heatmap(cell_data_dict, species_name, save_path=None):
     """
     all_data = []
     for cell, df in cell_data_dict.items():
+        if "species" not in df.columns:
+            print(f"Skipping cell {cell}: missing 'species' column")
+            continue
         df_species = df[df["species"] == species_name]
         for _, row in df_species.iterrows():
             all_data.append(
@@ -446,6 +456,9 @@ def plot_stacked_production_fraction(
     contrib_data = defaultdict(lambda: [0.0] * len(cell_numbers))
     for i, cell in enumerate(cell_numbers):
         df = cell_data_dict[cell]
+        if "species" not in df.columns:
+            print(f"Skipping cell {cell}: missing 'species' column")
+            continue
         df_species = df[df["species"] == species_name]
         for _, row in df_species.iterrows():
             if row["production_pct"] > row["consumption_pct"]:
@@ -585,6 +598,9 @@ def plot_species_net_percentage_vs_temperature(
         if cell not in temp_map:
             continue
         T = temp_map[cell]
+        if "species" not in df.columns:
+            print(f"Skipping cell {cell}: missing 'species' column")
+            continue
         df_species = df[df["species"] == species_name]
         if not df_species.empty:
             net_pct_total = df_species["net_pct"].sum()

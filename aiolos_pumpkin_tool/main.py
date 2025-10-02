@@ -66,7 +66,7 @@ class AIOLOSPumpKinPipeline:
     def setup_directories(self):
         """Create necessary directories."""
         os.makedirs(self.args.output_dir, exist_ok=True)
-        os.makedirs(self.args.data_dir, exist_ok=True)
+        os.makedirs(self.args.pumpkin_data_dir, exist_ok=True)
 
     def validate_configuration(self):
         """Validate configuration and warn about potential issues."""
@@ -94,7 +94,7 @@ class AIOLOSPumpKinPipeline:
             logfile = getattr(self.args, "logfile", None) or "log.txt"
             chemfile = getattr(self.args, "chemfile", None) or "chemistry.dat"
             # data_dir is where we write PumpKin inputs
-            out_data_dir = self.args.data_dir
+            out_data_dir = self.args.pumpkin_data_dir
             os.makedirs(out_data_dir, exist_ok=True)
 
             # Step 1: extract reactions from the AIOLOS log
@@ -165,7 +165,7 @@ class AIOLOSPumpKinPipeline:
                 aiolos_species.append(modified)
 
             # process radial profile (writes qt_densities/qt_conditions if implemented)
-            sim_dir = getattr(self.args, "simulation_dir", None)
+            sim_dir = getattr(self.args, "aiolos_dir", None)
             sim_name = getattr(self.args, "simulation_name", None)
             timestep = getattr(self.args, "timestep", None)
             if sim_dir and sim_name and timestep is not None:
@@ -229,19 +229,19 @@ class AIOLOSPumpKinPipeline:
 
             # Generate output files
             with open(
-                os.path.join(self.args.data_dir, self.args.species_file), "w"
+                os.path.join(self.args.pumpkin_data_dir, self.args.species_file), "w"
             ) as f:
                 for i, sp in enumerate(species_list, start=1):
                     f.write(f"{i} {sp}\n")
 
             with open(
-                os.path.join(self.args.data_dir, self.args.reactions_file), "w"
+                os.path.join(self.args.pumpkin_data_dir, self.args.reactions_file), "w"
             ) as f:
                 for idx, reaction in enumerate(reaction_list, start=1):
                     modified = process_reaction_line(reaction)
                     f.write(f"{idx} {modified}\n")
 
-            with open(os.path.join(self.args.data_dir, "qt_matrix.txt"), "w") as f:
+            with open(os.path.join(self.args.pumpkin_data_dir, "qt_matrix.txt"), "w") as f:
                 for sp in species_list:
                     row = [
                         (
@@ -314,7 +314,7 @@ class AIOLOSPumpKinPipeline:
                 timestep = getattr(self.args, "timestep", 85)
                 timesteps = [timestep]
                 avg_T, num_den = process_radial_profile(
-                    directory=self.args.simulation_dir,
+                    directory=self.args.aiolos_dir,
                     sim=self.args.simulation_name,
                     timestep=timestep,
                     species=species,
@@ -325,7 +325,7 @@ class AIOLOSPumpKinPipeline:
             else:
                 timesteps = range(10, 19, 1)
                 avg_T, num_den = process_timesteps(
-                    directory=self.args.simulation_dir,
+                    directory=self.args.aiolos_dir,
                     sim=self.args.simulation_name,
                     timesteps=timesteps,
                     species=species,
@@ -474,7 +474,7 @@ class AIOLOSPumpKinPipeline:
                     sys.executable,
                     plotting_script,
                     "--all",
-                    "--data-dir",
+                    "--pumpkin-data-dir",
                     self.args.output_dir,
                     "--output-dir",
                     os.path.join(self.args.output_dir, "Plots"),
@@ -487,15 +487,15 @@ class AIOLOSPumpKinPipeline:
                     "--top-n",
                     str(self.args.top_n),
                     "--species-file",
-                    os.path.join(self.args.data_dir, self.args.species_file),
+                    os.path.join(self.args.pumpkin_data_dir, self.args.species_file),
                     "--densities-file",
-                    os.path.join(self.args.data_dir, self.args.densities_file),
+                    os.path.join(self.args.pumpkin_data_dir, self.args.densities_file),
                     "--reactions-file",
-                    os.path.join(self.args.data_dir, self.args.reactions_file),
+                    os.path.join(self.args.pumpkin_data_dir, self.args.reactions_file),
                     "--rates-file",
-                    os.path.join(self.args.data_dir, self.args.rates_file),
+                    os.path.join(self.args.pumpkin_data_dir, self.args.rates_file),
                     "--temp-file",
-                    os.path.join(self.args.data_dir, "qt_conditions.txt"),
+                    os.path.join(self.args.pumpkin_data_dir, "qt_conditions.txt"),
                 ]
             )
 
@@ -526,7 +526,7 @@ class AIOLOSPumpKinPipeline:
         print(
             f"Configuration: {self.args.num_cells} cells, Species: {self.args.species}"
         )
-        print(f"Data directory: {self.args.data_dir}")
+        print(f"Data directory: {self.args.pumpkin_data_dir}")
         print(f"Output directory: {self.args.output_dir}")
 
         success_stages = 0

@@ -56,7 +56,7 @@ def main():
         help="Number of cells to process (default: 100)"
     )
     parser.add_argument(
-        "--data-dir", default="./data/",
+        "--pumpkin-data-dir", default="./data/",
         help="Directory containing simulation data (default: ./data/)"
     )
     parser.add_argument(
