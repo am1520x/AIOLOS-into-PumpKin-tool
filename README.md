@@ -30,6 +30,5 @@ python -m aiolos_pumpkin_tool.main --run-pumpkin --pumpkin-dir "/mnt/d/OneDrive/
 
  If doing running all will need all of the arguments, so becomes a long prompt. 
 
-python -m aiolos_pumpkin_tool.main --run-all --data-dir "/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_New_Ozone" --output-dir "AIOLOS_New_Ozone" --pumpkin-dir "/mnt/d/OneDrive/Water Worlds/PumpKin/src" --pumpkin_in-dir "/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_New_Ozone" --simulation-dir "../ozone/" --simulation-name HD40307_10Fearth_transcells2_long --output-folder "AIOLOS_New_Ozone" --timestep 19 --logfile log_HD40307_10Fearth_transcells2_long.log --chemfile chemistry_HD40307_10Fearth_transcells2_long_t19.dat --processing-type "radial_profile"
-
+python -m aiolos_pumpkin_tool.main --run-all --pumpkin-data-dir "/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_New_Ozone" --output-dir "AIOLOS_New_Ozone" --pumpkin-dir "/mnt/d/OneDrive/Water Worlds/PumpKin/src" --pumpkin_in-dir "/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_New_Ozone" --aiolos-dir "../ozone/" --simulation-name HD40307_10Fearth_transcells2_long --output-folder "AIOLOS_New_Ozone" --timestep 19 --logfile log_HD40307_10Fearth_transcells2_long.log --chemfile chemistry_HD40307_10Fearth_transcells2_long_t19.dat
 need to tidy up the sturcture and now what the arguments do. Also why is it not making densities file now?

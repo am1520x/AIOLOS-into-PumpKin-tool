@@ -77,43 +77,6 @@ class AIOLOSPumpKinPipeline:
             raise ValueError("Number of cells must be positive")
 
     def process_aiolos_data(self):
-        # """Process AIOLOS reaction files and simulation data."""
-        # print("=" * 60)
-        # print("STEP 1: Processing AIOLOS Data")
-        # print("=" * 60)
-
-        # try:
-        #     # Import conversion tools
-        #     from .conversion_tool.processing_aiolos_reac_file import (
-        #         parse_reaction_data,
-        #         process_reaction_line,
-        #         transform_species_set,
-        #     )
-        #     from .conversion_tool.making_densities_file import process_timesteps
-        #     from .conversion_tool.making_rates_file import make_rates
-
-        #     # Process reaction files
-        #     print("Processing reaction files...")
-        #     if not self._process_reaction_files():
-        #         print("Warning: Reaction file processing failed")
-        #         return False
-
-        #     # Process simulation data
-        #     print("Processing simulation data...")
-        #     if not self._process_simulation_data():
-        #         print("Error: Simulation data processing failed")
-        #         return False
-
-        #     print("SUCCESS: AIOLOS data processing completed successfully")
-        #     return True
-
-        # except ImportError as e:
-        #     print(f"Error: Missing conversion tools - {e}")
-        #     return False
-        # except Exception as e:
-        #     print(f"Error in AIOLOS data processing: {e}")
-        #     traceback.print_exc()
-        #     return False
         """Process AIOLOS reaction files and simulation data using conversion_tool logic."""
         import pandas as pd
         print("=" * 60)
@@ -220,12 +183,9 @@ class AIOLOSPumpKinPipeline:
                 rates_out = os.path.join(out_data_dir, self.args.rates_file)
                 pivoted.to_csv(rates_out, sep="\t", index=False)
                 print(f"Generated: {os.path.basename(rates_out)} (radial profile skipped)")
-
-                        # ---- ensure densities/conditions are created (call legacy helper) ----
+                        
             try:
-                # Try to create densities/conditions via the existing helper
-                # This uses your existing _process_simulation_data function which writes
-                # to the PumpKin Examples/<output_folder> path.
+                
                 print("Attempting to create qt_densities/qt_conditions via _process_simulation_data()...")
                 # call the helper that writes densities & conditions
                 if self._process_simulation_data():
@@ -234,23 +194,7 @@ class AIOLOSPumpKinPipeline:
                         "/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples",
                         getattr(self.args, "output_folder", "Testing"),
                     )
-                    src_dens = os.path.join(src_dir, "qt_densities.txt")
-                    src_cond = os.path.join(src_dir, "qt_conditions.txt")
-                    dst_dens = os.path.join(out_data_dir, "qt_densities.txt")
-                    dst_cond = os.path.join(out_data_dir, "qt_conditions.txt")
-                    # copy if files exist
-                    # if os.path.exists(src_dens):
-                    #     import shutil
-                    #     shutil.copy(src_dens, dst_dens)
-                    #     print(f"Copied {src_dens} -> {dst_dens}")
-                    # else:
-                    #     print(f"Notice: densities file not found at {src_dens}")
-                    # if os.path.exists(src_cond):
-                    #     import shutil
-                    #     shutil.copy(src_cond, dst_cond)
-                    #     print(f"Copied {src_cond} -> {dst_cond}")
-                    # else:
-                    #     print(f"Notice: conditions file not found at {src_cond}")
+                    
                 else:
                     print("Notice: _process_simulation_data() failed or produced no files")
             except Exception as _exc:
@@ -679,34 +623,34 @@ For more information, see README.md
 
     # Directory and file configuration
     parser.add_argument(
-        "--data-dir",
+        "--pumpkin-data-dir",
         type=str,
         default="./data/",
-        help="Directory for input/output data files (default: ./data/)",
+        help="Directory for input data files for PumpKin to use (default: ./data/), e.g. /mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_New_Ozone",
     )
     parser.add_argument(
         "--output-dir",
         type=str,
         default="./results/",
-        help="Directory for analysis results (default: ./results/)",
+        help="Directory folder for pumpkin files (default: ./results/), e.g. AIOLOS_New_Ozone",
     )
     parser.add_argument(
         "--pumpkin-dir",
         type=str,
         default="/mnt/d/OneDrive/Water Worlds/PumpKin/src",
-        help="Path to PumpKin directory",
+        help="Path to PumpKin directory housing the PumpKin executable (default: /mnt/d/OneDrive/Water Worlds/PumpKin/src), this is the directory that pumpkin runs from.",
     )
     parser.add_argument(
         "--pumpkin_in-dir",
         type=str,
         default="/mnt/d/OneDrive/Water Worlds/PumpKin/src/Examples/AIOLOS_NEW",
-        help="Path to PumpKin example directory",
+        help="Path to PumpKin inputs directory, is the same as --pumpkin-data-dir in normal use",
     )
     parser.add_argument(
-        "--simulation-dir",
+        "--aiolos-dir",
         type=str,
         default="../dynamic_cond0_data/",
-        help="Directory containing simulation data",
+        help="Directory containing the aiolos simulation data, i.e. the log file, the chem file, and .reac and the rest of the .dat files",
     )
     parser.add_argument(
         "--simulation-name",
@@ -725,8 +669,8 @@ For more information, see README.md
     parser.add_argument(
         "--species",
         nargs="+",
-        default=["H", "H2", "O", "OH"],
-        help="Species to analyze (default: H H2 O OH)",
+        default=["H", "H2O", "O", "OH"],
+        help="Species to analyze (default: H H2O O OH)",
     )
     parser.add_argument(
         "--top-n",
@@ -737,19 +681,19 @@ For more information, see README.md
     parser.add_argument(
         "--processing-type",
         choices=["timesteps", "radial_profile"],
-        default="timesteps",
-        help="Type of processing: timesteps or radial_profile (default: timesteps)",
+        default="radial_profile",
+        help="Type of processing: timesteps or radial_profile (default: radial)",
     )
     parser.add_argument(
         "--output-folder",
         default="Testing",
-        help="Output folder name in PumpKin/src/Examples/ (default: Testing)",
+        help="Output folder name in PumpKin/src/Examples/ (default: Testing), same as output-dir so will probably remove in future.",
     )
     parser.add_argument(
         "--timestep",
         type=int,
         default=85,
-        help="Timestep for radial profile processing (default: 85)",
+        help="Timestep for radial profile processing (default: 85), is the time index of the simulation output being analysed",
     )
 
     # File naming
